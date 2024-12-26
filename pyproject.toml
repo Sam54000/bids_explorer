@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "app-name"
+name = "bids_explorer"
 version = "0.1.0"
-description = "A beautiful description."
-authors = ["Reinder Vos de Wael <reinder.vosdewael@childmind.org>"]
-license = "LGPL-2.1"
+description = "A simple bids dataset explorer without being too strict"
+authors = ["Dr. Samuel Louviot <sam.louviot@gmail.com>"]
+license = "LGPL-3.0"
 readme = "README.md"
-packages = [{include = "APP_NAME", from = "src"}]
+packages = [{include = "bids_explorer", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "~3.11"
+python = "^3.11"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
@@ -55,7 +55,7 @@ exclude = [
   "node_modules",
   "venv"
 ]
-line-length = 88
+line-length = 79
 indent-width = 4
 src = ["src"]
 target-version = "py311"
@@ -81,6 +81,8 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 20
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
