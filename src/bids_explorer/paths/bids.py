@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from bids_explorer.paths.base import BasePath
+from bids_explorer.core.validation import validate_bids_file
 
 
 @dataclass
@@ -144,7 +145,7 @@ class BidsPath(BasePath):
         if isinstance(file, str):
             file = Path(file)
 
-        cls._check_filename(cls, file)
+        validate_bids_file(file)
         entities = {}
 
         if len(file.parts) > 2:
@@ -174,3 +175,4 @@ class BidsPath(BasePath):
         entities["extension"] = file.suffix
 
         return cls(**entities)
+    

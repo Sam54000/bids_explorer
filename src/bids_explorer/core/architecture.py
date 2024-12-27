@@ -32,6 +32,10 @@ class BidsArchitecture(BidsArchitectureMixin):
         if root:
             self.create_database_and_error_log()
 
+    def __copy__(self) -> "BidsArchitecture":
+        new_instance = BidsArchitecture()
+        return new_instance
+    
     def __repr__(self) -> str:  # noqa: D105
         if not self._database.empty:
             return (
@@ -62,31 +66,23 @@ class BidsArchitecture(BidsArchitectureMixin):
     def __add__(self, other: "BidsArchitecture") -> "BidsArchitecture":
         """Union of two BidsArchitecture instances.
 
-        Combines two BidsArchitecture instances, keeping unique files from
-        both.
+        Combines two BidsArchitecture instances, keeping unique files from both.
 
         Args:
             other: Another BidsArchitecture instance to combine with.
 
         Returns:
-            BidsArchitecture: New instance containing files from both
-            architectures.
+            BidsArchitecture: New instance containing files from both architectures.
 
         Raises:
-            ValueError: If other is not a BidsArchitecture instance or has
-            invalid columns.
+            ValueError: If other is not a BidsArchitecture instance or has invalid columns.
         """
         _ = prepare_for_operations(self, other)
-        new_instance = copy.copy(self)  # Shallow copy is sufficient here
-        # Use concat with copy=False for better performance
-        set_database(
-            new_instance,
-            pd.concat(
-                [self._database, other._database],
-                copy=False,
-                verify_integrity=True,
-            ),
-        )
+        non_duplicates = other._database.index.difference(self._database.index)
+        combined_db = pd.concat([self._database, 
+                                 other._database.loc[non_duplicates]])
+        new_instance = BidsArchitecture()
+        set_database(new_instance, combined_db)
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
 
@@ -107,9 +103,8 @@ class BidsArchitecture(BidsArchitectureMixin):
             invalid columns.
         """
         indices_other = prepare_for_operations(self, other)
-        new_instance = copy.copy(self)  # Shallow copy is sufficient
-        # Use index difference directly
         remaining_indices = self._database.index.difference(indices_other)
+        new_instance = BidsArchitecture()
         set_database(new_instance, self._database.loc[remaining_indices])
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
@@ -131,43 +126,12 @@ class BidsArchitecture(BidsArchitectureMixin):
             invalid columns.
         """
         indices_other = prepare_for_operations(self, other)
-        new_instance = copy.copy(self)  # Shallow copy is sufficient
-        # Use index intersection directly
         common_indices = self._database.index.intersection(indices_other)
+
+        new_instance = BidsArchitecture()
         set_database(new_instance, self._database.loc[common_indices])
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
-
-    def __xor__(self, other: "BidsArchitecture") -> "BidsArchitecture":
-        """Symmetric difference of two BidsArchitecture instances.
-
-        Creates a new instance containing files present in either architecture
-        but not both.
-
-        Args:
-            other: BidsArchitecture instance to compare with.
-
-        Returns:
-            BidsArchitecture: New instance containing files unique to each
-                              architecture.
-
-        Raises:
-            ValueError: If other is not a BidsArchitecture instance or has
-                        invalid columns.
-        """
-        indices_other = prepare_for_operations(self, other)
-        new_instance = copy.copy(self)  # Shallow copy is sufficient
-        # Use index symmetric_difference directly
-        xor_indices = self._database.index.symmetric_difference(indices_other)
-        set_database(new_instance, self._database.loc[xor_indices])
-        set_errors(new_instance, merge_error_logs(self, other))
-        return new_instance
-
-    @classmethod
-    def from_database(cls, filename: str | Path) -> None:
-        """Create BidsArchitecture instance from existing csv database."""
-        pass
-        return None
 
     @cached_property
     def database(self) -> pd.DataFrame:
