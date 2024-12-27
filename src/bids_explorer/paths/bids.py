@@ -1,11 +1,12 @@
 """BIDS-compliant path handling."""
 import re
+from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
+from bids_explorer.core.validation import validate_bids_file, validate_entities
 from bids_explorer.paths.base import BasePath
-from bids_explorer.core.validation import validate_bids_file
 
 
 @dataclass
@@ -30,32 +31,15 @@ class BidsPath(BasePath):
 
     def __post_init__(self) -> None:
         """Initialize and normalize BIDS entities."""
-        self._validate_and_normalize_entities()
+        validate_entities(
+            self.subject,
+            self.session,
+            self.task,
+            self.run,
+            self.acquisition,
+            self.description,
+        )
         super().__post_init__()
-
-    def _validate_and_normalize_entities(self) -> None:
-        """Validate and normalize all BIDS entities."""
-        prefix_mapping = {
-            "subject": "sub",
-            "session": "ses",
-            "task": "task",
-            "run": "run",
-            "acquisition": "acq",
-            "description": "desc",
-        }
-
-        for attr, prefix in prefix_mapping.items():
-            value = getattr(self, attr)
-            if value is not None and isinstance(value, str):
-                if "-" in value:
-                    given_prefix = value.split("-")[0]
-                    if given_prefix != prefix:
-                        raise ValueError(
-                            f"Invalid prefix in {attr}='{value}'. "
-                            f"Expected '{prefix}-' prefix if any, got "
-                            f"'{given_prefix}-'"
-                        )
-                setattr(self, attr, self._normalize_entity(prefix, value))
 
     def _normalize_entity(
         self, prefix: str, value: Optional[str]
@@ -148,11 +132,14 @@ class BidsPath(BasePath):
         validate_bids_file(file)
         entities = {}
 
-        if len(file.parts) > 2:
-            entities["datatype"] = file.parts[-2]
-            entities["subject"] = file.parts[-3].split("-")[1]
-            if len(file.parts) > 3:
-                entities["session"] = file.parts[-4].split("-")[1]
+        if file.suffix:
+            path = file.parent
+        else:
+            path = copy(file)
+
+        entities["datatype"] = path.parts[-1]
+        entities["session"] = path.parts[-2].split("-")[1]
+        entities["subject"] = path.parts[-3].split("-")[1]
 
         name_parts = file.stem.split("_")
         for part in name_parts:
@@ -175,4 +162,3 @@ class BidsPath(BasePath):
         entities["extension"] = file.suffix
 
         return cls(**entities)
-    

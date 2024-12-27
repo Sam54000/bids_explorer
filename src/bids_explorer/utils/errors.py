@@ -38,7 +38,13 @@ def merge_error_logs(
     if not hasattr(self, "_errors") or not hasattr(other, "_errors"):
         raise AttributeError("One or both objects missing error logs")
 
-    if self._errors.empty and other._errors.empty:
+    if self._errors.empty and not other._errors.empty:
+        return other._errors
+
+    elif not self._errors.empty and other._errors.empty:
+        return self._errors
+
+    elif self._errors.empty and other._errors.empty:
         return self._errors
 
     return pd.concat(

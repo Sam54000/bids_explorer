@@ -174,3 +174,42 @@ def validate_bids_file(file: Path) -> bool:
         raise BidsValidationError(message)
 
     return True
+
+
+def validate_entities(
+    subject: str,
+    session: str,
+    task: str,
+    run: str,
+    acquisition: str,
+    description: str,
+) -> None:
+    """Validate and normalize all BIDS entities."""
+    prefix_mapping = {
+        "subject": "sub",
+        "session": "ses",
+        "task": "task",
+        "run": "run",
+        "acquisition": "acq",
+        "description": "desc",
+    }
+
+    special_char_pattern = re.compile(r"[^a-zA-Z0-9-]")
+
+    for attr, prefix in prefix_mapping.items():
+        value = locals()[attr]
+        if value is not None and isinstance(value, str):
+            if special_char_pattern.search(value):
+                raise ValueError(
+                    f"Invalid character in {attr}='{value}'. "
+                    "Only alphanumeric characters and '-' are allowed."
+                )
+
+            if "-" in value:
+                given_prefix = value.split("-")[0]
+                if given_prefix != prefix:
+                    raise ValueError(
+                        f"Invalid prefix in {attr}='{value}'. "
+                        f"Expected '{prefix}-' prefix if any, got "
+                        f"'{given_prefix}-'"
+                    )

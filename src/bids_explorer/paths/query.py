@@ -32,8 +32,11 @@ class BidsQuery(BidsPath):
     suffix: Optional[str] = None
     extension: Optional[str] = None
 
-    def __post_init__(self) -> None:
-        """Initialize query parameters with wildcards."""
+    def __post_init__(self) -> None:  # noqa: D105
+        super().__post_init__()
+
+    def _add_wildcard_to_attributes(self) -> "BidsQuery":
+        """Add wildcard to attributes."""
         required_attrs = [
             "subject",
             "session",
@@ -53,13 +56,37 @@ class BidsQuery(BidsPath):
             if getattr(self, attr) is not None:
                 setattr(self, attr, getattr(self, attr) + "*")
 
-        super().__post_init__()
+        return self
+
+    def _remove_wildcard_from_attributes(self) -> "BidsQuery":
+        """Remove the wildcard from attributes."""
+        required_attrs = [
+            "subject",
+            "session",
+            "datatype",
+            "suffix",
+            "extension",
+            "task",
+            "run",
+            "acquisition",
+            "description",
+        ]
+
+        for attr in required_attrs:
+            if getattr(self, attr) is not None and "*" in getattr(self, attr):
+                setattr(self, attr, getattr(self, attr).replace("*", ""))
+            if getattr(self, attr) == "*" or getattr(self, attr) == ".*":
+                setattr(self, attr, None)
+
+        return self
 
     @property
     def filename(self) -> str:
         """Get filename pattern for querying."""
         potential_cases = ["*_*", "**", "*.*"]
+        self._add_wildcard_to_attributes()
         filename = super().filename
+        self._remove_wildcard_from_attributes()
         for case in potential_cases:
             filename = filename.replace(case, "*")
         return filename

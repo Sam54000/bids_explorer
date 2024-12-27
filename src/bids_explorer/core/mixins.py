@@ -22,17 +22,19 @@ def prepare_for_operations(
     Raises:
         ValueError: If objects are of incompatible types or invalid.
     """
-    conditions = (
+    conditions_on_object1 = (
         isinstance(object1, BidsArchitectureMixin),
         isinstance(object1, pd.DataFrame),
         isinstance(object1, set),
+    )
+    conditions_on_object2 = (
         isinstance(object2, BidsArchitectureMixin),
         isinstance(object2, pd.DataFrame),
         isinstance(object2, set),
     )
-    if not any(conditions):
-        raise ValueError(
-            f"Cannot perform set operations between types"
+    if not (any(conditions_on_object1) and any(conditions_on_object2)):
+        raise TypeError(
+            f"Cannot perform operations between types "
             f"{object1.__class__.__name__} "
             f"and {object2.__class__.__name__}. Expected BidsArchitecture, "
             "DataFrame, or set."

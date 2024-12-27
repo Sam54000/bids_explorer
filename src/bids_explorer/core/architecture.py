@@ -32,10 +32,6 @@ class BidsArchitecture(BidsArchitectureMixin):
         if root:
             self.create_database_and_error_log()
 
-    def __copy__(self) -> "BidsArchitecture":
-        new_instance = BidsArchitecture()
-        return new_instance
-    
     def __repr__(self) -> str:  # noqa: D105
         if not self._database.empty:
             return (
@@ -66,21 +62,25 @@ class BidsArchitecture(BidsArchitectureMixin):
     def __add__(self, other: "BidsArchitecture") -> "BidsArchitecture":
         """Union of two BidsArchitecture instances.
 
-        Combines two BidsArchitecture instances, keeping unique files from both.
+        Combines two BidsArchitecture instances, keeping unique files
+        from both.
 
         Args:
             other: Another BidsArchitecture instance to combine with.
 
         Returns:
-            BidsArchitecture: New instance containing files from both architectures.
+            BidsArchitecture: New instance containing files from both
+                              architectures.
 
         Raises:
-            ValueError: If other is not a BidsArchitecture instance or has invalid columns.
+            ValueError: If other is not a BidsArchitecture instance or has
+                        invalid columns.
         """
         _ = prepare_for_operations(self, other)
         non_duplicates = other._database.index.difference(self._database.index)
-        combined_db = pd.concat([self._database, 
-                                 other._database.loc[non_duplicates]])
+        combined_db = pd.concat(
+            [self._database, other._database.loc[non_duplicates]]
+        )
         new_instance = BidsArchitecture()
         set_database(new_instance, combined_db)
         set_errors(new_instance, merge_error_logs(self, other))
