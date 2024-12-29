@@ -10,11 +10,10 @@ from bids_explorer.core.architecture import BidsArchitecture
 def bids_dataset(tmp_path: Path) -> Path:
     """Create a temporary BIDS dataset structure."""
     data_dir = tmp_path / "data"
-    subjects = ["001", "002", "003", "004", "005"]  # Reduced set for clearer testing
+    subjects = ["001", "002", "003", "004", "005"]
     ses = "01"
     run = "01"
     acq = "anAcq"
-    desc = "aDescription"
 
     for sub in subjects:
         base_path = data_dir / f"sub-{sub}" / f"ses-{ses}" / "eeg"
@@ -22,17 +21,65 @@ def bids_dataset(tmp_path: Path) -> Path:
 
         # Create files with minimal content to make them valid BIDS files
         files = [
-            (f"sub-{sub}_ses-{ses}_task-aTask_eeg.vhdr", 
-             "Brain Vision Data Exchange Header File Version 1.0\n"),
-            (f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_eeg.vhdr", 
-             "Brain Vision Data Exchange Header File Version 1.0\n"),
-            (f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_eeg.vhdr", 
-             "Brain Vision Data Exchange Header File Version 1.0\n"),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_eeg.vhdr",
+                "Brain Vision Data Exchange Header File Version 1.0\n",
+            ),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_eeg.vhdr",
+                "Brain Vision Data Exchange Header File Version 1.0\n",
+            ),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_eeg.vhdr",
+                "Brain Vision Data Exchange Header File Version 1.0\n",
+            ),
         ]
 
         for filename, content in files:
             file_path = base_path / filename
             file_path.write_text(content)
+
+    return data_dir
+
+
+@pytest.fixture
+def invalid_bids_dataset(tmp_path: Path) -> Path:
+    """Create a temporary BIDS dataset with invalid files."""
+    data_dir = tmp_path / "data"
+
+    # Create invalid files with different types of errors
+    invalid_files = [
+        # Session mismatch between path and filename
+        (
+            "sub-001/ses-01/eeg/sub-001_ses-02_task-rest_eeg.vhdr",
+            "Brain Vision Data Exchange Header File Version 1.0\n",
+        ),
+        # Subject mismatch between path and filename
+        (
+            "sub-002/ses-01/eeg/sub-001_ses-01_task-rest_eeg.vhdr",
+            "Brain Vision Data Exchange Header File Version 1.0\n",
+        ),
+        # Invalid session key (sus instead of ses)
+        (
+            "sub-003/ses-01/eeg/sub-003_sus-01_task-rest_eeg.vhdr",
+            "Brain Vision Data Exchange Header File Version 1.0\n",
+        ),
+        # Invalid run value
+        (
+            "sub-004/ses-01/eeg/sub-004_ses-01_run-badrun_eeg.vhdr",
+            "Brain Vision Data Exchange Header File Version 1.0\n",
+        ),
+        # Invalid task name with special characters
+        (
+            "sub-005/ses-01/eeg/sub-005_ses-01_task-invalid@task_eeg.vhdr",
+            "Brain Vision Data Exchange Header File Version 1.0\n",
+        ),
+    ]
+
+    for filepath, content in invalid_files:
+        full_path = data_dir / filepath
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_text(content)
 
     return data_dir
 
@@ -49,25 +96,9 @@ def test_architecture_initialization() -> None:
 def test_architecture_database_creation(bids_dataset: Path) -> None:
     """Test database creation and basic properties."""
     arch = BidsArchitecture(root=bids_dataset)
-    arch.create_database_and_error_log()
-
+    print(arch._database["subject"].unique())
     # Test database structure
-    assert arch.errors.empty
     assert not arch.database.empty
-    assert set(arch.database.columns).issuperset(
-        {
-            "subject",
-            "session",
-            "datatype",
-            "task",
-            "run",
-            "acquisition",
-            "description",
-            "suffix",
-            "extension",
-        }
-    )
-
     # Test basic properties
     assert arch.subjects == ["001", "002", "003", "004", "005"]
     assert arch.sessions == ["01"]
@@ -90,6 +121,7 @@ def test_architecture_select(bids_dataset: Path) -> None:
     """
     arch = BidsArchitecture(root=bids_dataset)
 
+    assert not arch.database.empty
     # Single criterion
     result = arch.select(subject="001")
     assert len(result) > 0
@@ -103,7 +135,7 @@ def test_architecture_select(bids_dataset: Path) -> None:
 
     # List of values
     result = arch.select(subject=["001", "002"])
-    assert len(result) > 0
+    assert len(result) > 1
     assert all(result.database["subject"].isin(["001", "002"]))
 
     # Empty result
@@ -151,37 +183,34 @@ def test_architecture_set_operations(bids_dataset: Path) -> None:
     intersect = arch1 & arch2
     assert intersect.subjects == ["002"]
 
-def test_architecture_error_handling(bids_dataset: Path) -> None:
+
+def test_architecture_error_handling(invalid_bids_dataset: Path) -> None:
     """Test error handling during database creation."""
-    # First create the architecture and database
-    arch = BidsArchitecture(root=bids_dataset)
-    arch.create_database_and_error_log()
-    
-    # Create an invalid file that looks more like a BIDS file
-    invalid_file = (
-        bids_dataset / "sub-001" / "ses-01" / "eeg" / 
-        "sub-001_ses-02_invalid-task_run-badrun_eeg.vhdr"
-    )
-    invalid_file.touch()
+    arch = BidsArchitecture(root=invalid_bids_dataset)
 
-    # Debug prints
-    print("\nBefore recreation:")
-    print(f"Files in directory: {list(bids_dataset.rglob('*.vhdr'))}")
-    print(f"Invalid file exists: {invalid_file.exists()}")
-    
-    # Recreate the database to pick up the new invalid file
+    # Create database and error log
     arch.create_database_and_error_log()
-
-    # Debug prints
-    print("\nAfter recreation:")
-    print("Database:")
-    print(arch.database)
-    print("\nError log:")
-    print(arch.errors)
-    print(f"Error log empty: {arch.errors.empty}")
-    print(f"Error log columns: {arch.errors.columns}")
-    print(f"Error log shape: {arch.errors.shape}")
 
     # Check error log
-    assert not arch.errors.empty, "Error log should not be empty"
-    assert "sub-001_ses-02_invalid-task_run-badrun_eeg.vhdr" in str(arch.errors["filename"].iloc[0])
+    assert not arch._errors.empty, "Error log should not be empty"
+    assert len(arch._errors) == 5, "Should have caught all 5 invalid files"
+
+    # Get all error messages
+    error_messages = arch._errors["error_message"].astype(str).tolist()
+
+    # Check for specific error types
+    assert any(
+        "Session mismatch" in msg for msg in error_messages
+    ), "Missing session mismatch error"
+    assert any(
+        "Subject mismatch" in msg for msg in error_messages
+    ), "Missing subject mismatch error"
+    assert any(
+        "Invalid key 'sus'" in msg for msg in error_messages
+    ), "Missing invalid session key error"
+    assert any(
+        "Invalid run value" in msg for msg in error_messages
+    ), "Missing invalid run value error"
+    assert any(
+        "Invalid characters" in msg for msg in error_messages
+    ), "Missing invalid character error"

@@ -1,11 +1,15 @@
 """BIDS-compliant path handling."""
+
 import re
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
-from bids_explorer.core.validation import validate_bids_file, validate_entities
+from bids_explorer.core.validation import (
+    validate_and_normalize_entities,
+    validate_bids_file,
+)
 from bids_explorer.paths.base import BasePath
 
 
@@ -31,7 +35,7 @@ class BidsPath(BasePath):
 
     def __post_init__(self) -> None:
         """Initialize and normalize BIDS entities."""
-        validate_entities(
+        entities = validate_and_normalize_entities(
             self.subject,
             self.session,
             self.task,
@@ -39,6 +43,10 @@ class BidsPath(BasePath):
             self.acquisition,
             self.description,
         )
+
+        for attr, value in entities.items():
+            setattr(self, attr, value)
+
         super().__post_init__()
 
     def _normalize_entity(

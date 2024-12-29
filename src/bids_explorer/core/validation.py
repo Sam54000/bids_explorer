@@ -3,7 +3,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Set
+from typing import Optional, Set
 
 import pandas as pd
 
@@ -176,14 +176,38 @@ def validate_bids_file(file: Path) -> bool:
     return True
 
 
-def validate_entities(
-    subject: str,
-    session: str,
-    task: str,
-    run: str,
-    acquisition: str,
-    description: str,
-) -> None:
+def normalize_entity(
+    prefix: str,
+    value: Optional[str],
+) -> Optional[str]:
+    """Normalize BIDS entity value by removing prefix if present.
+
+    Args:
+        prefix: Expected prefix for the entity
+        value: Value to normalize
+
+    Returns:
+        Normalized value with prefix removed if present
+    """
+    if value is None:
+        return None
+
+    value = value.strip()
+    prefix_pattern = f"^{prefix}-"
+    if re.match(prefix_pattern, value):
+        return value[len(prefix) + 1 :]
+
+    return value
+
+
+def validate_and_normalize_entities(
+    subject: Optional[str],
+    session: Optional[str],
+    task: Optional[str],
+    run: Optional[str],
+    acquisition: Optional[str],
+    description: Optional[str],
+) -> dict[str, str | None]:
     """Validate and normalize all BIDS entities."""
     prefix_mapping = {
         "subject": "sub",
@@ -196,6 +220,7 @@ def validate_entities(
 
     special_char_pattern = re.compile(r"[^a-zA-Z0-9-]")
 
+    entities = {}
     for attr, prefix in prefix_mapping.items():
         value = locals()[attr]
         if value is not None and isinstance(value, str):
@@ -213,3 +238,7 @@ def validate_entities(
                         f"Expected '{prefix}-' prefix if any, got "
                         f"'{given_prefix}-'"
                     )
+
+            entities[attr] = normalize_entity(prefix, value)
+
+    return entities

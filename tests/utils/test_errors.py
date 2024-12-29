@@ -48,19 +48,21 @@ def test_merge_error_logs() -> None:
         {
             "error_message": ["Error 1", "Error 2"],
             "filename": ["file1.txt", "file2.txt"],
-            "inode": [1, 2],
-        }
+        },
+        index=[1, 2],
     )
     errors2 = pd.DataFrame(
         {
             "error_message": ["Error 2", "Error 3"],
             "filename": ["file2.txt", "file3.txt"],
-            "inode": [2, 3],
-        }
+        },
+        index=[2, 3],
     )
 
-    arch1 = TestBidsArchitecture(errors1)
-    arch2 = TestBidsArchitecture(errors2)
+    arch1 = TestBidsArchitecture()
+    arch1._errors = errors1
+    arch2 = TestBidsArchitecture()
+    arch2._errors = errors2
 
     merged = merge_error_logs(arch1, arch2)
 

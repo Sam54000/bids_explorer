@@ -245,15 +245,36 @@ class BidsArchitecture(BidsArchitectureMixin):
         """
         return self._get_unique_values("extension")
 
-    def create_database_and_error_log(self) -> "BidsArchitecture":
-        """Create database and error log for the BIDS directory.
+    def create_database_and_error_log(self) -> None:
+        """Create database and error log from BIDS dataset."""
+        if not self.root:
+            return
 
-        Returns:
-            BidsArchitecture: Self instance with populated database and error
-                              log.
-        """
-        self._database, self._errors = self._create_database()
-        return self
+        # Initialize empty DataFrames
+        self._database = pd.DataFrame()
+        self._errors = pd.DataFrame(
+            columns=["filename", "error_type", "error_message"]
+        )
+
+        files = list(self.root.rglob("*.vhdr"))
+        for file in files:
+            try:
+                # Validate file
+                validate_bids_file(file)
+
+            except Exception as e:
+                # Add error to error log
+                new_error = pd.DataFrame(
+                    {
+                        "filename": [str(file)],
+                        "error_type": [str(e.__class__.__name__)],
+                        "error_message": [str(e)],
+                    }
+                )
+                self._errors = pd.concat(
+                    [self._errors, new_error], ignore_index=True
+                )
+                continue  # Skip adding to database
 
     def _create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Scan filesystem and build DataFrame of matching files.
