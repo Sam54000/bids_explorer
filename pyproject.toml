@@ -11,14 +11,14 @@ packages = [{include = "APP_NAME", from = "src"}]
 python = "~3.11"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.2"
-mypy = "^1.8.0"
-pre-commit = "^3.6.2"
-pytest-cov = "^4.1.0"
-ruff = "^0.3.0"
+pytest = "^8.3.4"
+mypy = "^1.14.1"
+pre-commit = "^4.0.1"
+pytest-cov = "^6.0.0"
+ruff = "^0.8.4"
 
 [tool.poetry.group.docs.dependencies]
-pdoc = "^14.4.0"
+pdoc = "^15.0.1"
 
 [tool.pytest.ini_options]
 pythonpath = [
