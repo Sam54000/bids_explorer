@@ -1,8 +1,8 @@
 # bids_explorer pull request guidelines
 
-Pull requests are always welcome, and we appreciate any help you give. Note that a code of conduct applies to all spaces managed by the bids_explorer project, including issues and pull requests. Please see the [Code of Conduct](CODE_OF_CONDUCT.md) for details.
+Pull requests are always welcome, and I appreciate any help you give. Note that a code of conduct applies to all spaces managed by the bids_explorer project, including issues and pull requests. Please see the [Code of Conduct](CODE_OF_CONDUCT.md) for details.
 
-When submitting a pull request, we ask you to check the following:
+When submitting a pull request, I ask you to check the following:
 
 1. **Unit tests**, **documentation**, and **code style** are in order.
    See the Continuous Integration for up to date information on the current code style, tests, and any other requirements.
