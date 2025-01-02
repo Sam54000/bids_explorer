@@ -11,10 +11,10 @@ from bids_explorer.core.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
+from bids_explorer.core.validation import validate_bids_file
 from bids_explorer.paths import BidsPath, BidsQuery
 from bids_explorer.utils.database import set_database
 from bids_explorer.utils.errors import merge_error_logs, set_errors
-from bids_explorer.utils.validation import validate_bids_file
 
 
 class BidsArchitecture(BidsArchitectureMixin):
