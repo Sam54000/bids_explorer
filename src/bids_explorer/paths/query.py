@@ -61,10 +61,11 @@ class BidsQuery(BidsPath):
 
     def _cleanup_pattern(self, pattern: Path) -> Path:
         """Cleanup a pattern by replacing redundant wildcards."""
+        pattern_str = os.fspath(pattern)
         potential_cases = ["*_*", "**", "*.*"]
         for case in potential_cases:
-            cleaned_pattern = os.fspath(pattern).replace(case, "*")
-        return Path(cleaned_pattern)
+            pattern_str = pattern_str.replace(case, "*")
+        return Path(pattern_str)  # Convert back to Path at the end
 
     @property
     def filename(self) -> Path:
