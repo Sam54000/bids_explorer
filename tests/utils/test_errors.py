@@ -96,7 +96,7 @@ def test_merge_error_logs_empty() -> None:
 def test_merge_error_logs_missing_attributes() -> None:
     """Test merging error logs with missing attributes."""
 
-    class InvalidArchitecture:
+    class InvalidArchitecture(BidsArchitectureMixin):
         """Test class without required attributes."""
 
         pass
