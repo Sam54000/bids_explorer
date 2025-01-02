@@ -14,7 +14,6 @@ from bids_explorer.core.validation import (
 
 def test_is_all_columns_valid() -> None:
     """Test validation of DataFrame columns."""
-    # Test valid columns
     valid_df = pd.DataFrame(
         columns=[
             "root",
@@ -35,7 +34,6 @@ def test_is_all_columns_valid() -> None:
     )
     assert is_all_columns_valid(valid_df)
 
-    # Test invalid columns
     invalid_df = pd.DataFrame(columns=["subject", "invalid_column"])
     assert not is_all_columns_valid(invalid_df)
 
@@ -66,14 +64,11 @@ def test_validate_bids_file_valid_paths() -> None:
 def test_validate_bids_file_invalid_paths() -> None:
     """Test validation of invalid BIDS file paths."""
     invalid_paths = [
-        # Invalid directory structure
         Path("invalid/ses-01/eeg/sub-001_ses-01_task-rest_eeg.vhdr"),
-        # Subject mismatch between path and filename
         Path("sub-001/ses-01/eeg/sub-002_ses-01_task-rest_eeg.vhdr"),
-        # Session mismatch between path and filename
         Path("sub-001/ses-01/eeg/sub-001_ses-02_task-rest_eeg.vhdr"),
-        # Invalid key in filename
         Path("sub-001/ses-01/eeg/sub-001_ses-01_invalid-key_eeg.vhdr"),
+        Path("sab-001/ses-01/eeg/sub-001_ses-01_task-rest_eeg.vhdr"),
     ]
     for path in invalid_paths:
         with pytest.raises(BidsValidationError):
@@ -82,25 +77,25 @@ def test_validate_bids_file_invalid_paths() -> None:
 
 def test_validate_bids_file_datatype() -> None:
     """Test validation of BIDS datatype specifications."""
-    # Valid datatype
     valid_path = Path("sub-001/ses-01/eeg/sub-001_ses-01_task-rest_eeg.vhdr")
     assert validate_bids_file(valid_path) is True
 
-    # Invalid datatype (uppercase)
     invalid_path = Path("sub-001/ses-01/EEG/sub-001_ses-01_task-rest_eeg.vhdr")
+    with pytest.raises(BidsValidationError):
+        validate_bids_file(invalid_path)
+
+    invalid_path = Path("sub-001/ses-01/$e$/sub-001_ses-01_task-rest_eeg.vhdr")
     with pytest.raises(BidsValidationError):
         validate_bids_file(invalid_path)
 
 
 def test_validate_bids_file_entity_format() -> None:
     """Test validation of BIDS entity format in filenames."""
-    # Valid entity format
     valid_path = Path(
         "sub-001/ses-01/eeg/sub-001_ses-01_task-rest_run-01_eeg.vhdr"
     )
     assert validate_bids_file(valid_path) is True
 
-    # Invalid entity format (missing hyphen)
     invalid_path = Path(
         "sub-001/ses-01/eeg/sub-001_ses01_task-rest_run-01_eeg.vhdr"
     )

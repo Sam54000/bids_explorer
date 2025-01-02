@@ -19,7 +19,6 @@ class TestBidsArchitecture(BidsArchitectureMixin):
 
 def test_prepare_for_operations_valid() -> None:
     """Test prepare_for_operations with valid inputs."""
-    # Create test data
     columns = [
         "root",
         "subject",
@@ -42,17 +41,14 @@ def test_prepare_for_operations_valid() -> None:
     arch1 = TestBidsArchitecture(df1)
     arch2 = TestBidsArchitecture(df2)
 
-    # Test BidsArchitecture with BidsArchitecture
     result = prepare_for_operations(arch1, arch2)
     assert isinstance(result, pd.Index)
     assert list(result) == [2, 3, 4]
 
-    # Test BidsArchitecture with DataFrame
     result = prepare_for_operations(arch1, df2)
     assert isinstance(result, pd.Index)
     assert list(result) == [2, 3, 4]
 
-    # Test BidsArchitecture with set
     test_set = {2, 3, 4}
     result = prepare_for_operations(arch1, test_set)
     assert result == {2, 3, 4}
@@ -79,7 +75,6 @@ def test_prepare_for_operations_invalid() -> None:
     df1 = pd.DataFrame({col: [1, 2, 3] for col in columns}, index=[1, 2, 3])
     arch = TestBidsArchitecture(df1)
 
-    # Test with invalid type
     with pytest.raises(
         TypeError,
         match="Cannot perform operations between types TestBidsArchitecture"
@@ -87,7 +82,6 @@ def test_prepare_for_operations_invalid() -> None:
     ):
         prepare_for_operations(arch, "invalid")
 
-    # Test with invalid DataFrame (missing required columns)
     invalid_df = pd.DataFrame({"invalid_col": [1, 2, 3]})
     arch_invalid = TestBidsArchitecture(invalid_df)
 

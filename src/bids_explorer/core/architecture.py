@@ -1,7 +1,6 @@
 """Core BIDS architecture implementation."""
 
 import copy
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 from warnings import warn
@@ -25,12 +24,10 @@ class BidsArchitecture(BidsArchitectureMixin):
         Args:
             root: Optional root path to BIDS directory.
         """
-        self._database = pd.DataFrame()
-        self._errors = pd.DataFrame()
         self.root = Path(root) if root else None
-        self._path_handler = BidsQuery(root=self.root)
         if root:
-            self.create_database_and_error_log()
+            self._path_handler = BidsQuery(root=self.root)
+            self.create_database()
 
     def __repr__(self) -> str:  # noqa: D105
         if not self._database.empty:
@@ -133,18 +130,28 @@ class BidsArchitecture(BidsArchitectureMixin):
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
 
-    @cached_property
+    @property
     def database(self) -> pd.DataFrame:
         """Get database of matching files."""
-        if self._database.empty and self.root:
-            self.create_database_and_error_log()
+        conditions = (
+            hasattr(self, "_database"),
+            self._database.empty,
+            self.root is not None,
+        )
+        if all(conditions):
+            self.create_database()
         return self._database
 
-    @cached_property
+    @property
     def errors(self) -> pd.DataFrame:
         """Get error log database."""
-        if self._errors.empty and self.root:
-            self.create_database_and_error_log()
+        conditions = (
+            hasattr(self, "_database"),
+            self._database.empty,
+            self.root is not None,
+        )
+        if all(conditions):
+            self.create_database()
         return self._errors
 
     def _get_unique_values(self, column: str) -> List[str]:
@@ -276,7 +283,7 @@ class BidsArchitecture(BidsArchitectureMixin):
                 )
                 continue  # Skip adding to database
 
-    def _create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Scan filesystem and build DataFrame of matching files.
 
         Walks through the BIDS directory structure and creates two DataFrames:
@@ -329,7 +336,11 @@ class BidsArchitecture(BidsArchitectureMixin):
             except Exception as e:
                 self._add_error_to_log(file, e, error_flags)
 
-        return self._create_dataframes(data, error_flags)
+        self._database, self._errors = self._create_dataframes(
+            data, error_flags
+        )
+
+        return self
 
     def _add_file_to_database(
         self, file: Path, bids_path: BidsPath, data: Dict[str, List[Any]]
@@ -604,11 +615,11 @@ class BidsArchitecture(BidsArchitectureMixin):
         """
         mask = self._create_mask(**kwargs)
         if inplace:
-            set_database(self, self._database.loc[mask])
+            setattr(self, "_database", self._database.loc[mask])
             return self
 
         new_instance = copy.deepcopy(self)
-        set_database(new_instance, self._database.loc[mask])
+        setattr(new_instance, "_database", new_instance._database.loc[mask])
         return new_instance
 
     def remove(
@@ -637,9 +648,9 @@ class BidsArchitecture(BidsArchitectureMixin):
         """
         mask = self._create_mask(**kwargs)
         if inplace:
-            set_database(self, self._database.loc[~mask])
+            setattr(self, "_database", self._database.loc[~mask])
             return self
 
         new_instance = copy.deepcopy(self)
-        set_database(new_instance, self._database.loc[~mask])
+        setattr(new_instance, "_database", new_instance._database.loc[~mask])
         return new_instance

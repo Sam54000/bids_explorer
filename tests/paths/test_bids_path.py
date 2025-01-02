@@ -8,7 +8,6 @@ from bids_explorer.paths.bids import BidsPath
 
 def test_bids_path_initialization() -> None:
     """Test BidsPath initialization with various parameters."""
-    # Basic initialization
     path = BidsPath(
         subject="001",
         session="01",
@@ -23,7 +22,6 @@ def test_bids_path_initialization() -> None:
     assert path.suffix == "eeg"
     assert path.extension == ".vhdr"
 
-    # Test initialization with prefixed values
     path = BidsPath(
         subject="sub-002",
         session="ses-02",
@@ -38,7 +36,7 @@ def test_bids_path_normalization() -> None:
     """Test normalization of BIDS entities."""
     path = BidsPath(
         subject="sub-001",
-        session="ses-01",
+        session="01",
         task="task-rest",
         run="run-01",
         acquisition="acq-full",
@@ -94,7 +92,7 @@ def test_bids_path_from_filename() -> None:
 def test_bids_path_invalid_prefix() -> None:
     """Test handling of invalid entity prefixes."""
     with pytest.raises(ValueError):
-        BidsPath(subject="subject-001")  # Invalid prefix
+        BidsPath(subject="subject-001")
 
     with pytest.raises(ValueError):
-        BidsPath(task="mytask-rest")  # Invalid prefix
+        BidsPath(task="mytask-rest")

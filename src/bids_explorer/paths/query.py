@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Union
 
 from bids_explorer.paths.bids import BidsPath
 
@@ -34,6 +34,7 @@ class BidsQuery(BidsPath):
 
     def __post_init__(self) -> None:  # noqa: D105
         super().__post_init__()
+        self._add_wildcard_to_attributes()
 
     def _add_wildcard_to_attributes(self) -> "BidsQuery":
         """Add wildcard to attributes."""
@@ -58,38 +59,36 @@ class BidsQuery(BidsPath):
 
         return self
 
-    def _remove_wildcard_from_attributes(self) -> "BidsQuery":
-        """Remove the wildcard from attributes."""
-        required_attrs = [
-            "subject",
-            "session",
-            "datatype",
-            "suffix",
-            "extension",
-            "task",
-            "run",
-            "acquisition",
-            "description",
-        ]
-
-        for attr in required_attrs:
-            if getattr(self, attr) is not None and "*" in getattr(self, attr):
-                setattr(self, attr, getattr(self, attr).replace("*", ""))
-            if getattr(self, attr) == "*" or getattr(self, attr) == ".*":
-                setattr(self, attr, None)
-
-        return self
+    def _cleanup_pattern(self, pattern: Union[str, Path]) -> Path:
+        """Cleanup a pattern by replacing redundant wildcards."""
+        potential_cases = ["*_*", "**", "*.*"]
+        for case in potential_cases:
+            pattern = str(pattern).replace(case, "*")
+        return Path(pattern) if isinstance(pattern, str) else pattern
 
     @property
-    def filename(self) -> str:
+    def filename(self) -> Path:
         """Get filename pattern for querying."""
-        potential_cases = ["*_*", "**", "*.*"]
-        self._add_wildcard_to_attributes()
-        filename = super().filename
-        self._remove_wildcard_from_attributes()
-        for case in potential_cases:
-            filename = filename.replace(case, "*")
-        return filename
+        return self._cleanup_pattern(super().filename)
+
+    @property
+    def relative_path(self) -> Path:
+        """Get relative path for querying."""
+        return self._cleanup_pattern(super().relative_path)
+
+    @property
+    def fullpath(self) -> Path:
+        """Get full path for querying."""
+        return self.relative_path / self.filename
+
+    @property
+    def user_input(self) -> dict[str, str | list[str]]:
+        """Get user input for querying."""
+        return {
+            args: val.replace("*", "")
+            for args, val in self.__dict__.items()
+            if val != "*" and val is not None
+        }
 
     def generate(self) -> Iterator[Path]:
         """Generate iterator of matching files.

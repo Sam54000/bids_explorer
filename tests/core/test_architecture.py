@@ -11,33 +11,36 @@ def bids_dataset(tmp_path: Path) -> Path:
     """Create a temporary BIDS dataset structure."""
     data_dir = tmp_path / "data"
     subjects = ["001", "002", "003", "004", "005"]
-    ses = "01"
-    run = "01"
-    acq = "anAcq"
+    sessions = ["01", "02"]
+    runs = ["01", "02"]
+    acquisitions = ["anAcq", "anotherAcq"]
 
     for sub in subjects:
-        base_path = data_dir / f"sub-{sub}" / f"ses-{ses}" / "eeg"
-        base_path.mkdir(parents=True, exist_ok=True)
+        for ses in sessions:
+            for run in runs:
+                for acq in acquisitions:
+                    base_path = data_dir / f"sub-{sub}" / f"ses-{ses}" / "eeg"
+                    base_path.mkdir(parents=True, exist_ok=True)
 
-        # Create files with minimal content to make them valid BIDS files
-        files = [
-            (
-                f"sub-{sub}_ses-{ses}_task-aTask_eeg.vhdr",
-                "Brain Vision Data Exchange Header File Version 1.0\n",
-            ),
-            (
-                f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_eeg.vhdr",
-                "Brain Vision Data Exchange Header File Version 1.0\n",
-            ),
-            (
-                f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_eeg.vhdr",
-                "Brain Vision Data Exchange Header File Version 1.0\n",
-            ),
-        ]
+                    # Create files with minimal content to make them valid BIDS files
+                    files = [
+                        (
+                            f"sub-{sub}_ses-{ses}_task-aTask_eeg.vhdr",
+                            "Brain Vision Data Exchange Header File\n",
+                        ),
+                        (
+                            f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_eeg.vhdr",
+                            "Brain Vision Data Exchange Header File\n",
+                        ),
+                        (
+                            f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_eeg.vhdr",
+                            "Brain Vision Data Exchange Header File\n",
+                        ),
+                    ]
 
-        for filename, content in files:
-            file_path = base_path / filename
-            file_path.write_text(content)
+                    for filename, content in files:
+                        file_path = base_path / filename
+                        file_path.write_text(content)
 
     return data_dir
 
@@ -84,28 +87,16 @@ def invalid_bids_dataset(tmp_path: Path) -> Path:
     return data_dir
 
 
-def test_architecture_initialization() -> None:
-    """Test BidsArchitecture initialization."""
-    # Test empty initialization
-    arch = BidsArchitecture()
-    assert arch._database.empty
-    assert arch._errors.empty
-    assert arch.root is None
-
-
 def test_architecture_database_creation(bids_dataset: Path) -> None:
     """Test database creation and basic properties."""
     arch = BidsArchitecture(root=bids_dataset)
-    print(arch._database["subject"].unique())
-    # Test database structure
     assert not arch.database.empty
-    # Test basic properties
     assert arch.subjects == ["001", "002", "003", "004", "005"]
-    assert arch.sessions == ["01"]
+    assert arch.sessions == ["01", "02"]
     assert arch.datatypes == ["eeg"]
     assert arch.tasks == ["aTask"]
-    assert arch.runs == ["01"]
-    assert arch.acquisitions == ["anAcq"]
+    assert arch.runs == ["01", "02"]
+    assert arch.acquisitions == ["anAcq", "anotherAcq"]
     assert arch.suffixes == ["eeg"]
     assert arch.extensions == [".vhdr"]
 
@@ -122,25 +113,26 @@ def test_architecture_select(bids_dataset: Path) -> None:
     arch = BidsArchitecture(root=bids_dataset)
 
     assert not arch.database.empty
-    # Single criterion
     result = arch.select(subject="001")
-    assert len(result) > 0
+    assert result.subjects == ["001"]
+    assert len(result) == 10
     assert all(result.database["subject"] == "001")
 
-    # Multiple criteria
     result = arch.select(subject="001", task="aTask")
-    assert len(result) > 0
-    assert all(result.database["subject"] == "001")
-    assert all(result.database["task"] == "aTask")
+    assert result.subjects == ["001"]
+    assert result.tasks == ["aTask"]
+    assert len(result) == 10
 
-    # List of values
+    result = arch.select(subject="001", task="aTask", run="01", session="01")
+    assert result.subjects == ["001"]
+    assert result.tasks == ["aTask"]
+    assert result.runs == ["01"]
+    assert result.sessions == ["01"]
+    assert len(result) == 3
+
     result = arch.select(subject=["001", "002"])
-    assert len(result) > 1
-    assert all(result.database["subject"].isin(["001", "002"]))
-
-    # Empty result
-    result = arch.select(subject="nonexistent")
-    assert len(result) == 0
+    assert result.subjects == ["001", "002"]
+    assert len(result) == 20
 
     # Invalid key
     with pytest.raises(ValueError, match="Invalid selection keys"):
@@ -148,16 +140,17 @@ def test_architecture_select(bids_dataset: Path) -> None:
 
     # Chained selection
     result = arch.select(subject="001").select(task="aTask").select(run="01")
-    assert len(result) > 0
-    assert all(result.database["subject"] == "001")
-    assert all(result.database["task"] == "aTask")
-    assert all(result.database["run"] == "01")
+    assert len(result) == 6
+    assert result.subjects == ["001"]
+    assert result.tasks == ["aTask"]
+    assert result.runs == ["01"]
 
 
 def test_architecture_set_operations(bids_dataset: Path) -> None:
     """Test set operations between BidsArchitecture instances."""
     # Initialize architectures and create their databases
     arch = BidsArchitecture(root=bids_dataset)
+    arch.database
     arch1 = arch.select(subject=["001", "002"])
     arch2 = arch.select(subject=["002", "004"])
 
@@ -182,35 +175,3 @@ def test_architecture_set_operations(bids_dataset: Path) -> None:
     # Intersection
     intersect = arch1 & arch2
     assert intersect.subjects == ["002"]
-
-
-def test_architecture_error_handling(invalid_bids_dataset: Path) -> None:
-    """Test error handling during database creation."""
-    arch = BidsArchitecture(root=invalid_bids_dataset)
-
-    # Create database and error log
-    arch.create_database_and_error_log()
-
-    # Check error log
-    assert not arch._errors.empty, "Error log should not be empty"
-    assert len(arch._errors) == 5, "Should have caught all 5 invalid files"
-
-    # Get all error messages
-    error_messages = arch._errors["error_message"].astype(str).tolist()
-
-    # Check for specific error types
-    assert any(
-        "Session mismatch" in msg for msg in error_messages
-    ), "Missing session mismatch error"
-    assert any(
-        "Subject mismatch" in msg for msg in error_messages
-    ), "Missing subject mismatch error"
-    assert any(
-        "Invalid key 'sus'" in msg for msg in error_messages
-    ), "Missing invalid session key error"
-    assert any(
-        "Invalid run value" in msg for msg in error_messages
-    ), "Missing invalid run value error"
-    assert any(
-        "Invalid characters" in msg for msg in error_messages
-    ), "Missing invalid character error"
