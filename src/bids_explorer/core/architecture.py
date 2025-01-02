@@ -18,7 +18,7 @@ from .validation import validate_bids_file
 class BidsArchitecture(BidsArchitectureMixin):
     """Main class for handling BIDS directory structure."""
 
-    def __init__(self, root: Optional[Union[str, Path]] = None):  # noqa: ANN204
+    def __init__(self, root: Optional[Union[str, Path]] = None) -> None:
         """Initialize BIDS architecture.
 
         Args:
@@ -29,7 +29,8 @@ class BidsArchitecture(BidsArchitectureMixin):
             self._path_handler = BidsQuery(root=self.root)
             self.create_database()
 
-    def __repr__(self) -> str:  # noqa: D105
+    def __repr__(self) -> str:
+        """Return string representation of BidsArchitecture."""
         if not self._database.empty:
             return (
                 f"BidsArchitecture: {len(self._database)} files, "
@@ -41,19 +42,24 @@ class BidsArchitecture(BidsArchitectureMixin):
             )
         return "BidsArchitecture: No database created yet."
 
-    def __str__(self) -> str:  # noqa: D105
+    def __str__(self) -> str:
+        """Return string representation of BidsArchitecture."""
         return self.__repr__()
 
-    def __len__(self) -> int:  # noqa: D105
+    def __len__(self) -> int:
+        """Return number of files in database."""
         return len(self._database)
 
-    def __getitem__(self, index: int) -> pd.DataFrame:  # noqa: D105
+    def __getitem__(self, index: int) -> pd.DataFrame:
+        """Return database row at given index."""
         return self._database.iloc[index]
 
-    def __setitem__(self, index: int, value: pd.DataFrame):  # noqa: ANN204, D105
+    def __setitem__(self, index: int, value: pd.DataFrame) -> None:
+        """Setting items not supported."""
         raise NotImplementedError("Setting items is not supported")
 
-    def __iter__(self) -> Iterator[Path]:  # noqa: D105
+    def __iter__(self) -> Iterator[Path]:
+        """Return iterator over database rows."""
         return iter(self._database.iterrows())
 
     def __add__(self, other: "BidsArchitecture") -> "BidsArchitecture":
@@ -257,7 +263,6 @@ class BidsArchitecture(BidsArchitectureMixin):
         if not self.root:
             return
 
-        # Initialize empty DataFrames
         self._database = pd.DataFrame()
         self._errors = pd.DataFrame(
             columns=["filename", "error_type", "error_message"]
@@ -266,11 +271,9 @@ class BidsArchitecture(BidsArchitectureMixin):
         files = list(self.root.rglob("*.vhdr"))
         for file in files:
             try:
-                # Validate file
                 validate_bids_file(file)
 
             except Exception as e:
-                # Add error to error log
                 new_error = pd.DataFrame(
                     {
                         "filename": [str(file)],
@@ -281,7 +284,7 @@ class BidsArchitecture(BidsArchitectureMixin):
                 self._errors = pd.concat(
                     [self._errors, new_error], ignore_index=True
                 )
-                continue  # Skip adding to database
+                continue
 
     def create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Scan filesystem and build DataFrame of matching files.
@@ -499,7 +502,7 @@ class BidsArchitecture(BidsArchitectureMixin):
         else:
             return self._get_single_loc(dataframe_column, value)
 
-    def _create_mask(self, **kwargs) -> pd.Series:  # noqa: ANN003
+    def _create_mask(self, **kwargs: str | list[str] | None) -> pd.Series:
         """Create boolean mask for filtering DataFrame.
 
         Creates an optimized boolean mask for filtering the database based on
@@ -538,7 +541,6 @@ class BidsArchitecture(BidsArchitectureMixin):
                 continue
 
             if isinstance(value, list):
-                # Get inodes matching any value in the list
                 matching_inodes = set(
                     self._database[self._database[key].isin(value)].index
                 )
@@ -554,7 +556,6 @@ class BidsArchitecture(BidsArchitectureMixin):
 
             col = self._database[key]
 
-            # Handle numerical range queries more efficiently
             if "-" in value and self._is_numerical(col):
                 start, stop = value.split("-")
                 conditions = [
@@ -569,7 +570,6 @@ class BidsArchitecture(BidsArchitectureMixin):
                     )
 
                 if all(conditions):
-                    # Convert column to numeric once
                     col_numeric = pd.to_numeric(col, errors="coerce")
 
                     start_val = (
@@ -579,7 +579,6 @@ class BidsArchitecture(BidsArchitectureMixin):
                         int(stop) if stop.isdigit() else col_numeric.max()
                     )
 
-                    # Get inodes for rows within range
                     range_mask = (col_numeric >= start_val) & (
                         col_numeric <= stop_val
                     )
@@ -591,7 +590,11 @@ class BidsArchitecture(BidsArchitectureMixin):
 
         return self._database.index.isin(valid_inodes)
 
-    def select(self, inplace: bool = False, **kwargs) -> "BidsArchitecture":  # noqa: ANN003
+    def select(
+        self,
+        inplace: bool = False,
+        **kwargs: str | list[str] | None,
+    ) -> "BidsArchitecture":
         """Select files from database based on BIDS entities.
 
         Args:
