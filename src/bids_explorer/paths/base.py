@@ -56,7 +56,7 @@ class BasePath:
             return self.root / relative_path
         return relative_path
 
-    def _make_basename(self) -> str:
+    def _make_basename(self) -> Path:
         """Create filename without extension.
 
         Returns:
@@ -69,4 +69,4 @@ class BasePath:
             components.append(f"ses-{self.session}")
         if self.suffix:
             components.append(self.suffix)
-        return "_".join(components)
+        return Path("_".join(components))

@@ -1,4 +1,7 @@
-"""Core BIDS architecture implementation."""
+"""Main BIDS architecture implementation.
+
+The BidsArchitecture object is the main class you want to
+"""
 
 import copy
 from pathlib import Path
@@ -12,27 +15,47 @@ from bids_explorer.core.mixins import (
     prepare_for_operations,
 )
 from bids_explorer.core.validation import validate_bids_file
-from bids_explorer.paths import BidsPath, BidsQuery
+from bids_explorer.paths.bids import BidsPath
+from bids_explorer.paths.query import BidsQuery
 from bids_explorer.utils.database import set_database
 from bids_explorer.utils.errors import merge_error_logs, set_errors
 
 
 class BidsArchitecture(BidsArchitectureMixin):
-    """Main class for handling BIDS directory structure."""
+    """Main class for handling BIDS directory structure.
 
-    def __init__(self, root: Optional[Union[str, Path]] = None) -> None:
-        """Initialize BIDS architecture.
+    Args:
+        root: Optional root path to BIDS directory.
 
-        Args:
-            root: Optional root path to BIDS directory.
-        """
+    Attributes:
+        root (Optional[Path]):
+            Path to the BIDS directory root, or None if not set.
+        database (pd.DataFrame):
+            DataFrame containing all BIDS files and their metadata.
+        errors (List[Dict[str, Any]]):
+            List of validation errors found during database creation.
+        subjects (List[str]):
+            List of subjects IDs present in the instance.
+        sessions (List[str]):
+            List of session IDs present in the instance.
+        datatypes (List[str]):
+            List of datatypes present in the dataset.
+        tasks (List[str]):
+            List of task names present in the dataset.
+        runs (List[str]):
+            List of run numbers present in the dataset.
+    """
+
+    def __init__(  # noqa: D107
+        self,
+        root: Optional[Union[str, Path]] = None,
+    ) -> None:
         self.root = Path(root) if root else None
         if root:
             self._path_handler = BidsQuery(root=self.root)
             self.create_database()
 
-    def __repr__(self) -> str:
-        """Return string representation of BidsArchitecture."""
+    def __repr__(self) -> str:  # noqa: D105
         if not self._database.empty:
             return (
                 f"BidsArchitecture: {len(self._database)} files, "
@@ -44,43 +67,25 @@ class BidsArchitecture(BidsArchitectureMixin):
             )
         return "BidsArchitecture: No database created yet."
 
-    def __str__(self) -> str:
-        """Return string representation of BidsArchitecture."""
+    def __str__(self) -> str:  # noqa: D105
         return self.__repr__()
 
-    def __len__(self) -> int:
-        """Return number of files in database."""
+    def __len__(self) -> int:  # noqa: D105
         return len(self._database)
 
-    def __getitem__(self, index: int) -> pd.DataFrame:
-        """Return database row at given index."""
+    def __getitem__(self, index: int) -> pd.DataFrame:  # noqa: D105
         return self._database.iloc[index]
 
-    def __setitem__(self, index: int, value: pd.DataFrame) -> None:
-        """Setting items not supported."""
+    def __setitem__(self, index: int, value: pd.DataFrame) -> None:  # noqa: D105
         raise NotImplementedError("Setting items is not supported")
 
-    def __iter__(self) -> Iterator[Path]:
-        """Return iterator over database rows."""
+    def __iter__(self) -> Iterator[Path]:  # noqa: D105
         return iter(self._database.iterrows())
 
-    def __add__(self, other: "BidsArchitecture") -> "BidsArchitecture":
-        """Union of two BidsArchitecture instances.
-
-        Combines two BidsArchitecture instances, keeping unique files
-        from both.
-
-        Args:
-            other: Another BidsArchitecture instance to combine with.
-
-        Returns:
-            BidsArchitecture: New instance containing files from both
-                              architectures.
-
-        Raises:
-            ValueError: If other is not a BidsArchitecture instance or has
-                        invalid columns.
-        """
+    def __add__(  # noqa: D105
+        self,
+        other: "BidsArchitecture",
+    ) -> "BidsArchitecture":
         _ = prepare_for_operations(self, other)
         non_duplicates = other._database.index.difference(self._database.index)
         combined_db = pd.concat(
@@ -91,22 +96,10 @@ class BidsArchitecture(BidsArchitectureMixin):
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
 
-    def __sub__(self, other: "BidsArchitecture") -> "BidsArchitecture":
-        """Difference of two BidsArchitecture instances.
-
-        Creates a new instance containing files present in self but not in
-        other.
-
-        Args:
-            other: BidsArchitecture instance to subtract.
-
-        Returns:
-            BidsArchitecture: New instance containing files unique to self.
-
-        Raises:
-            ValueError: If other is not a BidsArchitecture instance or has
-            invalid columns.
-        """
+    def __sub__(  # noqa: D105
+        self,
+        other: "BidsArchitecture",
+    ) -> "BidsArchitecture":
         indices_other = prepare_for_operations(self, other)
         remaining_indices = self._database.index.difference(indices_other)
         new_instance = BidsArchitecture()
@@ -114,22 +107,10 @@ class BidsArchitecture(BidsArchitectureMixin):
         set_errors(new_instance, merge_error_logs(self, other))
         return new_instance
 
-    def __and__(self, other: "BidsArchitecture") -> "BidsArchitecture":
-        """Intersection of two BidsArchitecture instances.
-
-        Creates a new instance containing only files present in both
-        architectures.
-
-        Args:
-            other: BidsArchitecture instance to intersect with.
-
-        Returns:
-            BidsArchitecture: New instance containing common files.
-
-        Raises:
-            ValueError: If other is not a BidsArchitecture instance or has
-            invalid columns.
-        """
+    def __and__(  # noqa: D105
+        self,
+        other: "BidsArchitecture",
+    ) -> "BidsArchitecture":
         indices_other = prepare_for_operations(self, other)
         common_indices = self._database.index.intersection(indices_other)
 
@@ -139,8 +120,7 @@ class BidsArchitecture(BidsArchitectureMixin):
         return new_instance
 
     @property
-    def database(self) -> pd.DataFrame:
-        """Get database of matching files."""
+    def database(self) -> pd.DataFrame:  # noqa: D102
         conditions = (
             hasattr(self, "_database"),
             self._database.empty,
@@ -151,11 +131,10 @@ class BidsArchitecture(BidsArchitectureMixin):
         return self._database
 
     @property
-    def errors(self) -> pd.DataFrame:
-        """Get error log database."""
+    def errors(self) -> pd.DataFrame:  # noqa: D102
         conditions = (
-            hasattr(self, "_database"),
-            self._database.empty,
+            hasattr(self, "_errors"),
+            self._errors.empty,
             self.root is not None,
         )
         if all(conditions):
@@ -163,14 +142,6 @@ class BidsArchitecture(BidsArchitectureMixin):
         return self._errors
 
     def _get_unique_values(self, column: str) -> List[str]:
-        """Get sorted unique non-None values for a given column.
-
-        Args:
-            column: Name of the database column
-
-        Returns:
-            List[str]: Sorted list of unique non-None values
-        """
         return sorted(
             [
                 elem
@@ -180,115 +151,42 @@ class BidsArchitecture(BidsArchitectureMixin):
         )
 
     @property
-    def subjects(self) -> List[str]:
-        """Get unique subject identifiers.
-
-        Returns:
-            List[str]: Sorted list of subject IDs
-        """
+    def subjects(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("subject")
 
     @property
-    def sessions(self) -> List[str]:
-        """Get unique session identifiers.
-
-        Returns:
-            List[str]: Sorted list of session IDs
-        """
+    def sessions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("session")
 
     @property
-    def datatypes(self) -> List[str]:
-        """Get unique datatypes.
-
-        Returns:
-            List[str]: Sorted list of datatypes
-        """
+    def datatypes(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("datatype")
 
     @property
-    def tasks(self) -> List[str]:
-        """Get unique task identifiers.
-
-        Returns:
-            List[str]: Sorted list of task IDs
-        """
+    def tasks(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("task")
 
     @property
-    def runs(self) -> List[str]:
-        """Get unique run numbers.
-
-        Returns:
-            List[str]: Sorted list of run numbers
-        """
+    def runs(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("run")
 
     @property
-    def acquisitions(self) -> List[str]:
-        """Get unique acquisition identifiers.
-
-        Returns:
-            List[str]: Sorted list of acquisition IDs
-        """
+    def acquisitions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("acquisition")
 
     @property
-    def descriptions(self) -> List[str]:
-        """Get unique description identifiers.
-
-        Returns:
-            List[str]: Sorted list of description IDs
-        """
+    def descriptions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("description")
 
     @property
-    def suffixes(self) -> List[str]:
-        """Get unique suffixes.
-
-        Returns:
-            List[str]: Sorted list of suffixes
-        """
+    def suffixes(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("suffix")
 
     @property
-    def extensions(self) -> List[str]:
-        """Get unique file extensions.
-
-        Returns:
-            List[str]: Sorted list of file extensions
-        """
+    def extensions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("extension")
 
-    def create_database_and_error_log(self) -> None:
-        """Create database and error log from BIDS dataset."""
-        if not self.root:
-            return
-
-        self._database = pd.DataFrame()
-        self._errors = pd.DataFrame(
-            columns=["filename", "error_type", "error_message"]
-        )
-
-        files = list(self.root.rglob("*.vhdr"))
-        for file in files:
-            try:
-                validate_bids_file(file)
-
-            except Exception as e:
-                new_error = pd.DataFrame(
-                    {
-                        "filename": [str(file)],
-                        "error_type": [str(e.__class__.__name__)],
-                        "error_message": [str(e)],
-                    }
-                )
-                self._errors = pd.concat(
-                    [self._errors, new_error], ignore_index=True
-                )
-                continue
-
-    def create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def create_database(self) -> "BidsArchitecture":
         """Scan filesystem and build DataFrame of matching files.
 
         Walks through the BIDS directory structure and creates two DataFrames:
@@ -599,6 +497,9 @@ class BidsArchitecture(BidsArchitectureMixin):
     ) -> "BidsArchitecture":
         """Select files from database based on BIDS entities.
 
+        It select files from the database based on the BIDS entities provided.
+        The selection can be done with wildcards or ranges.
+
         Args:
             inplace: If True, modify the current instance. If False,
                      return a new instance.
@@ -608,15 +509,34 @@ class BidsArchitecture(BidsArchitectureMixin):
         Returns:
             BidsArchitecture: Filtered instance containing only matching files.
 
-        Examples:
+        Example 1:
             >>> bids = BidsArchitecture(
             ...     "path/to/data"
             ... )
-            >>> # Select all files for subject '01' and session '1'
             >>> subset = bids.select(
             ...     subject="01",
             ...     session="1",
             ... )
+
+        Example 2:
+            It is possible to select multiple subjects at once:
+            >>> subset = (
+            ...     bids.select(
+            ...         subject=[
+            ...             "01",
+            ...             "02",
+            ...         ]
+            ...     )
+            ... )
+
+        Example 3:
+            If we don't know the exact session number, we can use a wildcard
+            with a `-` to tell we want from session 1 to the maximum number of
+            sessions:
+            >>> subset = bids.select(
+            ...     session="1-*"
+            ... )
+
         """
         mask = self._create_mask(**kwargs)
         if inplace:

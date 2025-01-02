@@ -71,7 +71,7 @@ class BidsPath(BasePath):
 
         return value
 
-    def _make_basename(self) -> str:
+    def _make_basename(self) -> Path:
         """Create BIDS-compliant filename without extension.
 
         Returns:
@@ -90,17 +90,17 @@ class BidsPath(BasePath):
         if self.suffix:
             components.append(self.suffix)
 
-        return "_".join(filter(None, components))
+        return Path("_".join(filter(None, components)))
 
     @property
-    def basename(self) -> str:
+    def basename(self) -> Path:
         """Get BIDS-compliant filename without extension."""
         return self._make_basename()
 
     @property
-    def filename(self) -> str:
+    def filename(self) -> Path:
         """Get complete filename with extension."""
-        return f"{self.basename}{self.extension or ''}"
+        return Path(f"{self.basename}{self.extension or ''}")
 
     @property
     def relative_path(self) -> Path:
@@ -169,4 +169,8 @@ class BidsPath(BasePath):
         entities["suffix"] = name_parts[-1]
         entities["extension"] = file.suffix
 
-        return cls(**entities)
+        # Get the root path (everything before subject directory)
+        root = Path(*path.parts[:-3]) if len(path.parts) > 3 else None
+
+        # Create instance with root path and entities
+        return cls(root=root, **entities)

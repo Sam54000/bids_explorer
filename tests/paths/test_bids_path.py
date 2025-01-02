@@ -57,7 +57,7 @@ def test_bids_path_basename() -> None:
         run="01",
         suffix="eeg",
     )
-    expected = "sub-001_ses-01_task-rest_run-01_eeg"
+    expected = Path("sub-001_ses-01_task-rest_run-01_eeg")
     assert path.basename == expected
 
 
@@ -70,7 +70,7 @@ def test_bids_path_filename() -> None:
         suffix="eeg",
         extension=".vhdr",
     )
-    expected = "sub-001_ses-01_task-rest_eeg.vhdr"
+    expected = Path("sub-001_ses-01_task-rest_eeg.vhdr")
     assert path.filename == expected
 
 

@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional
 
 from bids_explorer.paths.bids import BidsPath
 
@@ -59,12 +59,12 @@ class BidsQuery(BidsPath):
 
         return self
 
-    def _cleanup_pattern(self, pattern: Union[str, Path]) -> Path:
+    def _cleanup_pattern(self, pattern: Path) -> Path:
         """Cleanup a pattern by replacing redundant wildcards."""
         potential_cases = ["*_*", "**", "*.*"]
         for case in potential_cases:
-            pattern = str(pattern).replace(case, "*")
-        return Path(pattern) if isinstance(pattern, str) else pattern
+            cleaned_pattern = os.fspath(pattern).replace(case, "*")
+        return Path(cleaned_pattern)
 
     @property
     def filename(self) -> Path:

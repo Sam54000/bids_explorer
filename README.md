@@ -1,10 +1,5 @@
 [![DOI](https://zenodo.org/badge/657341621.svg)](https://zenodo.org/doi/10.5281/zenodo.10383685)
 
-
-- [ ] If it hasn't already been done for your organization/acccount, grant third-party app permissions for CodeCov.
-- [ ] To set up an API documentation website, after the first successful build, go to the `Settings` tab of your repository, scroll down to the `GitHub Pages` section, and select `gh-pages` as the source. This will generate a link to your API docs.
-- [ ] Update stability badge in `README.md` to reflect the current state of the project. A list of stability badges to copy can be found [here](https://github.com/orangemug/stability-badges). The [node documentation](https://nodejs.org/docs/latest-v20.x/api/documentation.html#documentation_stability_index) can be used as a reference for the stability levels.
-
 # BIDS Explorer
 Tool for exploring BIDS datasets which is more flexible than mne-bids or pybids
 (which are both great tools I use very often).
@@ -16,24 +11,54 @@ Tool for exploring BIDS datasets which is more flexible than mne-bids or pybids
 [![LGPL--3.0 License](https://img.shields.io/badge/license-LGPL--3.0-blue.svg)](https://github.com/Sam54000/bids_explorer/blob/main/LICENSE)
 [![pages](https://img.shields.io/badge/api-docs-blue)](https://Sam54000.github.io/bids_explorer)
 
-## Features
+# Introduction
 
-## Installation
+BidsArchitecture is the primary object for managing BIDS dataset structures.
+When provided with a directory (root) containing a BIDS dataset, an instance
+of BidsArchitecture extracts key information about the dataset's structure and
+populates a [pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
+with relevant details, such as subject identifiers, sessions,
+and other metadata.
 
-Install this package via :
+Once initialized, the instance supports various operations to filter and
+select subsets of the dataset based on criteria like sessions, tasks, and
+other BIDS entities.
 
-```sh
-pip install bids_explorer
+It is assumed that the dataset adheres to the BIDS specification, following a
+directory tree structure similar to the example below:
+```
+root
+├── sub-01
+│   ├── ses-01
+│   │   └── eeg
+│   │       └── sub-01_ses-01_task-aTask_eeg.edf
+│   └── ses-02
+│       └── eeg
+│           └── sub-01_ses-02_task-aTask_eeg.edf
+└── sub-02
+    │   └── eeg
+    │       └── sub-02_ses-01_task-aTask_eeg.edf
+    └── ses-02
+        └── eeg
+            └── sub-02_ses-02_task-aTask_eeg.edf
 ```
 
-Or get the newest development version via:
+# Installation
 
-```sh
-pip install git+https://github.com/childmindresearch/bids_explorer
-```
+For the moment this module is not published on pypi so the installation will
+require you to follow these steps:
 
-## Quick start
+1. Make sure poetry is installed on your machine (or the remote machine you
+are working on). Poetry is a dependancies and environment manager which
+make easier python deployment. It is very straightforward to install, just
+follow the instruction on their
+[website](https://python-poetry.org/docs/#installation)
+2. Go to your projects folder `cd ~/projects` (or wherever it is)
+3. Clone this repository `git clone https://github.com/Sam54000/bids_explorer.git`.
+4. Move to the cloned repository `cd ./bids_explorer`
+5. Run `poetry install`
 
+# Quick start
 
 The main class is `BidsArchitecture`.
 ```Python
@@ -41,22 +66,45 @@ import bids_explorer
 
 # Create an instance of BidsArchitecture
 bids = bids_explorer.BidsArchitecture(root="path/to/bids/dataset")
-
 ```
 
-the BidsArchitecture instance has several attributes which define the BIDS
-dataset such as `subject`, `session`, `task`, `acquisition`, `run`, `suffix`.
+The dataset will be represented by the attribute database, which is a
+pandas DataFrame containing all the individual files within the dataset.
 
-In the example above `bids.subject` will give a list of all the subjects in the
-BIDS dataset provided.
-### Selecting files
-It is possible to select files based on BIDS entities.
+The BidsArchitecture instance also provides several attributes
+corresponding to BIDS entities, such as:
+
+- subjects
+- sessions
+- tasks
+- acquisitions
+- runs
+- description
+- suffixes
+- extension
+- datatype
+
 ```Python
-selected_files = bids.select(subject="01", session="01")
+>>> bids.subjects
+["01","02"]
+>>> bids.sessions
+["01","02"]
 ```
-This will return a new instance of `BidsArchitecture` with the selected files.
 
-### Performing operations between two `BidsArchitecture` instances
+In this example:
+- bids.subjects returns a list of all subject identifiers.
+- bids.sessions returns a list of all session identifiers.
+
+## Selecting files
+ou can select files based on BIDS entities. For example, to retrieve files
+only for subject "01":
+```Python
+selected_files = bids.select(subject="01")
+```
+This will return a new instance of BidsArchitecture containing only
+the selected files.
+
+## Performing operations between two `BidsArchitecture` instances
 Performing operations between two `BidsArchitecture` instances is possible.
 The available operations are `+` and `-` and `*` (intersection).
 
@@ -77,9 +125,14 @@ Intersection of 2 Architectures:
 intersection_architecture = bids1 * bids2
 ```
 
-### Removing entries from the `BidsArchitecture` instance
+## Removing entries from the `BidsArchitecture` instance
 It is possible to remove entries from the `BidsArchitecture` instance.
 ```Python
 bids = bids.remove(subject="01", session="01")
 ```
 This will return a new instance of `BidsArchitecture` with the specified files removed.
+
+## Error logging
+A nice feature of `BidsArchitecture` is its `errors` attributes which is a
+panda DataFrame that lists all the files that doesn't follow BIDS format within
+the dataset.
