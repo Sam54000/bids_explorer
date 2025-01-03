@@ -21,6 +21,20 @@
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
 
+            <h2>Contents</h2>
+            <ul>
+  <li><a href="#bids-explorer">BIDS Explorer</a></li>
+  <li><a href="#introduction">Introduction</a></li>
+  <li><a href="#installation">Installation</a></li>
+  <li><a href="#quick-start">Quick start</a>
+  <ul>
+    <li><a href="#selecting-files">Selecting files</a></li>
+    <li><a href="#performing-operations-between-two-bidsarchitecture-instances">Performing operations between two <code>BidsArchitecture</code> instances</a></li>
+    <li><a href="#removing-entries-from-the-bidsarchitecture-instance">Removing entries from the <code>BidsArchitecture</code> instance</a></li>
+    <li><a href="#error-logging">Error logging</a></li>
+  </ul></li>
+</ul>
+
 
             <h2>Submodules</h2>
             <ul>
@@ -41,7 +55,175 @@
                     <h1 class="modulename">
 bids_explorer    </h1>
 
-                        <div class="docstring"><p></p>
+                        <div class="docstring"><p><a href="https://zenodo.org/doi/10.5281/zenodo.10383685"><img src="https://zenodo.org/badge/657341621.svg" alt="DOI" /></a></p>
+
+<h1 id="bids-explorer">BIDS Explorer</h1>
+
+<p>Tool for exploring BIDS datasets which is more flexible than mne-bids or pybids
+(which are both great tools I use very often).</p>
+
+<p><a href="https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml?query=branch%3Amain"><img src="https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml/badge.svg?branch=main" alt="Build" /></a>
+<a href="https://codecov.io/gh/Sam54000/bids_explorer"><img src="https://codecov.io/gh/Sam54000/bids_explorer/branch/main/graph/badge.svg?token=22HWWFWPW5" alt="codecov" /></a>
+<a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff" /></a>
+<img src="https://img.shields.io/badge/stability-stable-green.svg" alt="stability-stable" />
+<a href="https://github.com/Sam54000/bids_explorer/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-LGPL--3.0-blue.svg" alt="LGPL--3.0 License" /></a>
+<a href="https://Sam54000.github.io/bids_explorer"><img src="https://img.shields.io/badge/api-docs-blue" alt="pages" /></a></p>
+
+<h1 id="introduction">Introduction</h1>
+
+<p>BidsArchitecture is the primary object for managing BIDS dataset structures.
+When provided with a directory (root) containing a BIDS dataset, an instance
+of BidsArchitecture extracts key information about the dataset's structure and
+populates a <a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html">pandas DataFrame</a>
+with relevant details, such as subject identifiers, sessions,
+and other metadata.</p>
+
+<p>Once initialized, the instance supports various operations to filter and
+select subsets of the dataset based on criteria like sessions, tasks, and
+other BIDS entities.</p>
+
+<p>It is assumed that the dataset adheres to the BIDS specification, following a
+directory tree structure similar to the example below:</p>
+
+<pre><code>root
+├── sub-01
+│   ├── ses-01
+│   │   └── eeg
+│   │       └── sub-01_ses-01_task-aTask_eeg.edf
+│   └── ses-02
+│       └── eeg
+│           └── sub-01_ses-02_task-aTask_eeg.edf
+└── sub-02
+    │   └── eeg
+    │       └── sub-02_ses-01_task-aTask_eeg.edf
+    └── ses-02
+        └── eeg
+            └── sub-02_ses-02_task-aTask_eeg.edf
+</code></pre>
+
+<h1 id="installation">Installation</h1>
+
+<p>For the moment this module is not published on pypi so the installation will
+require you to follow these steps:</p>
+
+<ol>
+<li>Make sure poetry is installed on your machine (or the remote machine you
+are working on). Poetry is a dependancies and environment manager which
+make easier python deployment. It is very straightforward to install, just
+follow the instruction on their
+<a href="https://python-poetry.org/docs/#installation">website</a></li>
+<li>Go to your projects folder <code>cd ~/projects</code> (or wherever it is)</li>
+<li>Clone this repository <code>git clone https://github.com/Sam54000/bids_explorer.git</code>.</li>
+<li>Move to the cloned repository <code>cd ./bids_explorer</code></li>
+<li>Run <code>poetry install</code></li>
+</ol>
+
+<h1 id="quick-start">Quick start</h1>
+
+<p>The main class is <code>BidsArchitecture</code>.</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">import</span> <span class="nn">bids_explorer</span>
+
+<span class="c1"># Create an instance of BidsArchitecture</span>
+<span class="n">bids</span> <span class="o">=</span> <span class="n">bids_explorer</span><span class="o">.</span><span class="n">BidsArchitecture</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;path/to/bids/dataset&quot;</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>The dataset will be represented by the attribute database, which is a
+pandas DataFrame containing all the individual files within the dataset.</p>
+
+<p>The BidsArchitecture instance also provides several attributes
+corresponding to BIDS entities, such as:</p>
+
+<ul>
+<li>subjects</li>
+<li>sessions</li>
+<li>tasks</li>
+<li>acquisitions</li>
+<li>runs</li>
+<li>description</li>
+<li>suffixes</li>
+<li>extension</li>
+<li>datatype</li>
+</ul>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">bids</span><span class="o">.</span><span class="n">subjects</span>
+<span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">,</span><span class="s2">&quot;02&quot;</span><span class="p">]</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">bids</span><span class="o">.</span><span class="n">sessions</span>
+<span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">,</span><span class="s2">&quot;02&quot;</span><span class="p">]</span>
+</code></pre>
+</div>
+
+<p>In this example:</p>
+
+<ul>
+<li>bids.subjects returns a list of all subject identifiers.</li>
+<li>bids.sessions returns a list of all session identifiers.</li>
+</ul>
+
+<h2 id="selecting-files">Selecting files</h2>
+
+<p>ou can select files based on BIDS entities. For example, to retrieve files
+only for subject "01":</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">selected_files</span> <span class="o">=</span> <span class="n">bids</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">subject</span><span class="o">=</span><span class="s2">&quot;01&quot;</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>This will return a new instance of BidsArchitecture containing only
+the selected files.</p>
+
+<h2 id="performing-operations-between-two-bidsarchitecture-instances">Performing operations between two <code>BidsArchitecture</code> instances</h2>
+
+<p>Performing operations between two <code>BidsArchitecture</code> instances is possible.
+The available operations are <code>+</code> and <code>-</code> and <code>*</code> (intersection).</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">bids1</span> <span class="o">=</span> <span class="n">bids_explorer</span><span class="o">.</span><span class="n">BidsArchitecture</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;path/to/bids/dataset1&quot;</span><span class="p">)</span>
+<span class="n">bids2</span> <span class="o">=</span> <span class="n">bids_explorer</span><span class="o">.</span><span class="n">BidsArchitecture</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;path/to/bids/dataset2&quot;</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>Add 2 Architectures:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">merged_architecture</span> <span class="o">=</span> <span class="n">bids1</span> <span class="o">+</span> <span class="n">bids2</span>
+</code></pre>
+</div>
+
+<p>Subtract 2 Architectures:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">subtracted_architecture</span> <span class="o">=</span> <span class="n">bids1</span> <span class="o">-</span> <span class="n">bids2</span>
+</code></pre>
+</div>
+
+<p>Intersection of 2 Architectures:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">intersection_architecture</span> <span class="o">=</span> <span class="n">bids1</span> <span class="o">*</span> <span class="n">bids2</span>
+</code></pre>
+</div>
+
+<h2 id="removing-entries-from-the-bidsarchitecture-instance">Removing entries from the <code>BidsArchitecture</code> instance</h2>
+
+<p>It is possible to remove entries from the <code>BidsArchitecture</code> instance.</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="n">bids</span> <span class="o">=</span> <span class="n">bids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">subject</span><span class="o">=</span><span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="s2">&quot;01&quot;</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>This will return a new instance of <code>BidsArchitecture</code> with the specified files removed.</p>
+
+<h2 id="error-logging">Error logging</h2>
+
+<p>A nice feature of <code>BidsArchitecture</code> is its <code>errors</code> attributes which is a
+panda DataFrame that lists all the files that doesn't follow BIDS format within
+the dataset.</p>
 </div>
 
                         <input id="mod-bids_explorer-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -49,7 +231,7 @@ bids_explorer    </h1>
                         <label class="view-source-button" for="mod-bids_explorer-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="sd">.. include:: ../README.md</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="sd">.. include:: ../../README.md</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="sd">&quot;&quot;&quot;</span>  <span class="c1"># noqa: D200, D415, D212</span>
 </span></pre></div>
 
