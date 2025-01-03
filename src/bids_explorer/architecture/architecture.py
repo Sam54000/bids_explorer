@@ -1,8 +1,4 @@
-"""Main BIDS architecture implementation.
-
-The BidsArchitecture object is the main class you want to
-"""
-
+"""Main BIDS architecture implementation."""
 import copy
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
@@ -10,11 +6,11 @@ from warnings import warn
 
 import pandas as pd
 
-from bids_explorer.core.mixins import (
+from bids_explorer.architecture.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
-from bids_explorer.core.validation import validate_bids_file
+from bids_explorer.architecture.validation import validate_bids_file
 from bids_explorer.paths.bids import BidsPath
 from bids_explorer.paths.query import BidsQuery
 from bids_explorer.utils.database import set_database
@@ -120,7 +116,21 @@ class BidsArchitecture(BidsArchitectureMixin):
         return new_instance
 
     @property
-    def database(self) -> pd.DataFrame:  # noqa: D102
+    def database(self) -> pd.DataFrame:
+        """Returns the BIDS dataset as a DataFrame.
+
+        This DataFrame represents the entire BIDS dataset with indexed files.
+        Each row represents a single file, with columns containing:
+        - BIDS entities (subject, session, datatype, task, run, etc.)
+        - Full file path
+        - UNIX metadata (atime, mtime, ctime)
+
+        Rows are indexed by the file's inode number, which uniquely identifies
+        each file in the filesystem.
+
+        This DataFrame serves as the core representation of the BIDS dataset
+        and is used for all operations.
+        """
         conditions = (
             hasattr(self, "_database"),
             self._database.empty,
@@ -131,7 +141,12 @@ class BidsArchitecture(BidsArchitectureMixin):
         return self._database
 
     @property
-    def errors(self) -> pd.DataFrame:  # noqa: D102
+    def errors(self) -> pd.DataFrame:
+        """Returns the error log as a DataFrame.
+
+        This DataFrame contains information about files that failed validation
+        during the database creation process.
+        """
         conditions = (
             hasattr(self, "_errors"),
             self._errors.empty,
@@ -151,35 +166,75 @@ class BidsArchitecture(BidsArchitectureMixin):
         )
 
     @property
-    def subjects(self) -> List[str]:  # noqa: D102
+    def subjects(self) -> List[str]:
+        """Returns a list of unique subjects present in the dataset.
+
+        This list contains all the subject IDs found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("subject")
 
     @property
-    def sessions(self) -> List[str]:  # noqa: D102
+    def sessions(self) -> List[str]:
+        """Returns a list of unique sessions present in the dataset.
+
+        This list contains all the session IDs found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("session")
 
     @property
-    def datatypes(self) -> List[str]:  # noqa: D102
+    def datatypes(self) -> List[str]:
+        """Returns a list of unique datatypes present in the dataset.
+
+        This list contains all the datatypes found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("datatype")
 
     @property
-    def tasks(self) -> List[str]:  # noqa: D102
+    def tasks(self) -> List[str]:
+        """Returns a list of unique tasks present in the dataset.
+
+        This list contains all the task names found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("task")
 
     @property
-    def runs(self) -> List[str]:  # noqa: D102
+    def runs(self) -> List[str]:
+        """Returns a list of unique runs present in the dataset.
+
+        This list contains all the run numbers found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("run")
 
     @property
-    def acquisitions(self) -> List[str]:  # noqa: D102
+    def acquisitions(self) -> List[str]:
+        """Returns a list of unique acquisitions present in the dataset.
+
+        This list contains all the acquisition names found in the BIDS dataset
+        or after a selection has been performed.
+        """
         return self._get_unique_values("acquisition")
 
     @property
-    def descriptions(self) -> List[str]:  # noqa: D102
+    def descriptions(self) -> List[str]:
+        """Returns a list of unique descriptions present in the dataset.
+
+        This list contains all the description names found in the BIDS dataset
+        or after a selection has been performed.
+        """
         return self._get_unique_values("description")
 
     @property
-    def suffixes(self) -> List[str]:  # noqa: D102
+    def suffixes(self) -> List[str]:
+        """Returns a list of unique suffixes present in the dataset.
+
+        This list contains all the suffixes found in the BIDS dataset or
+        after a selection has been performed.
+        """
         return self._get_unique_values("suffix")
 
     @property

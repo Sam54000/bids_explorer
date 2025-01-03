@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from bids_explorer.core.validation import (
+from bids_explorer.architecture.validation import (
     BidsValidationError,
     get_invalid_columns,
     is_all_columns_valid,

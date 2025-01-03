@@ -3,7 +3,7 @@ from typing import Union
 
 import pandas as pd
 
-from bids_explorer.core.validation import is_all_columns_valid
+from bids_explorer.architecture.validation import is_all_columns_valid
 
 
 def prepare_for_operations(

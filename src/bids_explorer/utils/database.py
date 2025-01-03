@@ -1,7 +1,7 @@
 """Database handling utilities."""
 import pandas as pd
 
-from bids_explorer.core.mixins import BidsArchitectureMixin
+from bids_explorer.architecture.mixins import BidsArchitectureMixin
 
 
 def set_database(object: BidsArchitectureMixin, value: pd.DataFrame) -> None:

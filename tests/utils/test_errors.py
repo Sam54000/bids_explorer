@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from bids_explorer.core.mixins import BidsArchitectureMixin
+from bids_explorer.architecture.mixins import BidsArchitectureMixin
 from bids_explorer.utils.errors import merge_error_logs, set_errors
 
 

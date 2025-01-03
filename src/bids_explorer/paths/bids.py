@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
-from bids_explorer.core.validation import (
+from bids_explorer.architecture.validation import (
     validate_and_normalize_entities,
     validate_bids_file,
 )

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from bids_explorer.core.architecture import BidsArchitecture
+from bids_explorer.architecture.architecture import BidsArchitecture
 
 
 @pytest.fixture

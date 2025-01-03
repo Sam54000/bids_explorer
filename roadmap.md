@@ -1,10 +1,13 @@
 # BIDS Explorer Development Roadmap
 
-## Finish Documentation (High Priority)
+## 1. Setter for BidsArchitecture attributes (High Priority)
+- Add setter for dataset criteria attributes to allow for dynamic updating.
 
+## 2. Regex implementation for more complex queries (High Priority)
+- Implement regex support for more flexible query patterns.
 
-## 1. Strict Selection Implementation (High Priority)
-### 1.1 Complete Dataset Selection
+## 3. Strict Selection Implementation (High Priority)
+### 3.1 Complete Dataset Selection
 - Implement method to select subjects based on complete dataset criteria
 - Add functionality to verify if subjects have all required sessions
 - Add functionality to verify if subjects have all required datatypes
@@ -29,57 +32,57 @@ complete_data, report = bids.strict_select(
 print(report)  # Shows which subjects were missing which sessions
 ```
 
-## 2. Enhanced Validation Features (Medium Priority)
-### 2.1 BIDS Specification Compliance
+## 4. Enhanced Validation Features (Medium Priority)
+### 4.1 BIDS Specification Compliance
 - Add more comprehensive BIDS validation checks
 - Implement validation against specific BIDS versions
 - Add support for custom validation rules
 
-### 2.2 Data Quality Checks
+### 4.2 Data Quality Checks
 - Add file integrity verification
 - Implement metadata consistency checks
 - Add support for custom quality metrics
 
-## 3. Query Enhancement (Medium Priority)
-### 3.1 Advanced Query Features
+## 5. Query Enhancement (Medium Priority)
+### 5.1 Advanced Query Features
 - Add support for regular expressions in queries
 - Implement complex logical operations (AND, OR, NOT) in queries
 - Add support for nested queries
 
-### 3.2 Query Performance Optimization
+### 5.2 Query Performance Optimization
 - Implement query caching
 - Add index-based searching
 - Optimize memory usage for large datasets
 
-## 4. Data Management Features (Low Priority)
-### 4.1 Dataset Modification
+## 6. Data Management Features (Low Priority)
+### 6.1 Dataset Modification
 - Add support for safe dataset modifications
 - Implement version control for dataset changes
 - Add support for dataset reorganization
 
-### 4.2 Export and Import
+### 6.2 Export and Import
 - Add support for exporting subsets of data
 - Implement import validation
 - Add support for different export formats
 
-## 5. Documentation and Examples (Ongoing)
-### 5.1 API Documentation
+## 7. Documentation and Examples (Ongoing)
+### 7.1 API Documentation
 - Enhance docstring coverage
 - Add more usage examples
 - Create tutorials for common use cases
 
-### 5.2 User Guides
+### 7.2 User Guides
 - Create comprehensive user guide
 - Add best practices documentation
 - Include troubleshooting guide
 
-## 6. Testing and Quality Assurance (Ongoing)
-### 6.1 Test Coverage
+## 8. Testing and Quality Assurance (Ongoing)
+### 8.1 Test Coverage
 - Increase test coverage
 - Add integration tests
 - Implement performance benchmarks
 
-### 6.2 Quality Metrics
+### 8.2 Quality Metrics
 - Add code quality metrics
 - Implement automated style checking
 - Add security scanning

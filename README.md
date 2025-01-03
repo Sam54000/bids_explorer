@@ -1,8 +1,10 @@
 [![DOI](https://zenodo.org/badge/657341621.svg)](https://zenodo.org/doi/10.5281/zenodo.10383685)
 
 # BIDS Explorer
-Tool for exploring BIDS datasets which is more flexible than mne-bids or pybids
-(which are both great tools I use very often).
+Tool for exploring BIDS datasets which is allows more flexibility than
+[mne-bids](https://mne.tools/mne-bids/stable/index.html) or
+[pybids](https://pybids.readthedocs.io/en/stable/index.html) (which are both
+amazing tools I use very often but sometimes lack flexibility).
 
 [![Build](https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/Sam54000/bids_explorer/branch/main/graph/badge.svg?token=22HWWFWPW5)](https://codecov.io/gh/Sam54000/bids_explorer)
@@ -24,8 +26,7 @@ Once initialized, the instance supports various operations to filter and
 select subsets of the dataset based on criteria like sessions, tasks, and
 other BIDS entities.
 
-It is assumed that the dataset adheres to the BIDS specification, following a
-directory tree structure similar to the example below:
+It is assumed that the dataset adheres to the [BIDS specification](https://bids-specification.readthedocs.io/en/stable/introduction.html), following a directory tree structure similar to the example below:
 ```
 root
 ├── sub-01

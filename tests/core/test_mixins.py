@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from bids_explorer.core.mixins import (
+from bids_explorer.architecture.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
