@@ -38,7 +38,7 @@
 
             <h2>Submodules</h2>
             <ul>
-                    <li><a href="bids_explorer/core.html">core</a></li>
+                    <li><a href="bids_explorer/architecture.html">architecture</a></li>
             </ul>
 
 
@@ -59,8 +59,10 @@ bids_explorer    </h1>
 
 <h1 id="bids-explorer">BIDS Explorer</h1>
 
-<p>Tool for exploring BIDS datasets which is more flexible than mne-bids or pybids
-(which are both great tools I use very often).</p>
+<p>Tool for exploring BIDS datasets which is allows more flexibility than
+<a href="https://mne.tools/mne-bids/stable/index.html">mne-bids</a> or
+<a href="https://pybids.readthedocs.io/en/stable/index.html">pybids</a> (which are both
+amazing tools I use very often but sometimes lack flexibility).</p>
 
 <p><a href="https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml?query=branch%3Amain"><img src="https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml/badge.svg?branch=main" alt="Build" /></a>
 <a href="https://codecov.io/gh/Sam54000/bids_explorer"><img src="https://codecov.io/gh/Sam54000/bids_explorer/branch/main/graph/badge.svg?token=22HWWFWPW5" alt="codecov" /></a>
@@ -82,8 +84,7 @@ and other metadata.</p>
 select subsets of the dataset based on criteria like sessions, tasks, and
 other BIDS entities.</p>
 
-<p>It is assumed that the dataset adheres to the BIDS specification, following a
-directory tree structure similar to the example below:</p>
+<p>It is assumed that the dataset adheres to the <a href="https://bids-specification.readthedocs.io/en/stable/introduction.html">BIDS specification</a>, following a directory tree structure similar to the example below:</p>
 
 <pre><code>root
 ├── sub-01
