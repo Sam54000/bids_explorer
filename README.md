@@ -3,7 +3,7 @@
 # BIDS Explorer
 Tool for exploring BIDS datasets which is allows more flexibility than
 [mne-bids](https://mne.tools/mne-bids/stable/index.html) or
-[pybids](https://pybids.readthedocs.io/en/stable/index.html) (which are both
+[pybids](https://bids-standard.github.io/pybids/) (which are both
 amazing tools I use very often but sometimes lack flexibility).
 
 [![Build](https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/Sam54000/bids_explorer/actions/workflows/test.yaml?query=branch%3Amain)
