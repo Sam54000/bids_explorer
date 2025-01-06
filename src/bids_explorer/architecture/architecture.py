@@ -45,10 +45,30 @@ class BidsArchitecture(BidsArchitectureMixin):
     def __init__(  # noqa: D107
         self,
         root: Optional[Union[str, Path]] = None,
+        subject: Optional[str] = None,
+        session: Optional[str] = None,
+        datatype: Optional[str] = None,
+        task: Optional[str] = None,
+        run: Optional[str] = None,
+        acquisition: Optional[str] = None,
+        description: Optional[str] = None,
+        suffix: Optional[str] = None,
+        extension: Optional[str] = None,
     ) -> None:
         self.root = Path(root) if root else None
         if root:
-            self._path_handler = BidsQuery(root=self.root)
+            self._path_handler = BidsQuery(
+                root=self.root,
+                subject=subject,
+                session=session,
+                datatype=datatype,
+                task=task,
+                run=run,
+                acquisition=acquisition,
+                description=description,
+                suffix=suffix,
+                extension=extension,
+            )
             self.create_database()
 
     def __repr__(self) -> str:  # noqa: D105
