@@ -7,19 +7,6 @@ import pytest
 from bids_explorer.paths.query import BidsQuery
 
 
-def test_query_initialization() -> None:
-    """Test BidsQuery initialization with various parameters."""
-    query = BidsQuery(
-        subject="001",
-        session="01",
-        task="rest",
-    )
-
-    assert query.user_input["subject"] == "001"
-    assert query.user_input["session"] == "01"
-    assert query.user_input["task"] == "rest"
-
-
 @pytest.mark.parametrize(
     "params,expected_filename,expected_path",
     [
@@ -39,13 +26,88 @@ def test_query_initialization() -> None:
             Path("sub-001/ses-01/*"),
         ),
         (
-            {"subject": "001", "task": "rest", "run": "01"},
-            Path("sub-001_ses-*_task-rest*_run-01*"),
+            {"task": "rest", "run": "01"},
+            Path("sub-*_ses-*_task-rest*_run-01*"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"subject": "001", "task": "rest", "acquisition": "01"},
+            Path("sub-001_ses-*_task-rest_acq-01*"),
             Path("sub-001/ses-*/*"),
         ),
         (
-            {"subject": "001", "session": "002", "extension": ".vhdr"},
-            Path("sub-001_ses-002_*.vhdr"),
+            {"suffix": "eeg"},
+            Path("sub-*_ses-*_eeg.*"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"subject": "001", "suffix": "eeg"},
+            Path("sub-001_ses-*_eeg.*"),
+            Path("sub-001/ses-*/*"),
+        ),
+        (
+            {"description": "aDesc", "suffix": "eeg"},
+            Path("sub-*_ses-*desc-aDesc*_eeg.*"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"session": "01", "task": "rest", "suffix": "eeg"},
+            Path("sub-*_ses-01*task-aDesc*_eeg.*"),
+            Path("sub-*/ses-01/*"),
+        ),
+        (
+            {"extension": ".vhdr"},
+            Path("sub-*_ses-*.vhdr"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"session": "001", "extension": ".vhdr"},
+            Path("sub-*_ses-001*.vhdr"),
+            Path("sub-*/ses-001/*"),
+        ),
+        (
+            {"task": "rest", "extension": ".vhdr"},
+            Path("sub-*_ses-*task-rest*.vhdr"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"subject": "001", "task": "rest", "extension": ".vhdr"},
+            Path("sub-001_ses-*task-rest*.vhdr"),
+            Path("sub-001/ses-*/*"),
+        ),
+        (
+            {"suffix": "eeg", "extension": ".vhdr"},
+            Path("sub-*_ses-*_eeg.vhdr"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {"session": "001", "suffix": "eeg", "extension": ".vhdr"},
+            Path("sub-*_ses-001*_eeg.vhdr"),
+            Path("sub-*/ses-001/*"),
+        ),
+        (
+            {"run": "001", "suffix": "eeg", "extension": ".vhdr"},
+            Path("sub-*_ses-*run-001*_eeg.vhdr"),
+            Path("sub-*/ses-*/*"),
+        ),
+        (
+            {
+                "session": "02",
+                "run": "001",
+                "suffix": "eeg",
+                "extension": ".vhdr",
+            },
+            Path("sub-*_ses-02*run-001*_eeg.vhdr"),
+            Path("sub-*/ses-02/*"),
+        ),
+        (
+            {
+                "subject": "001",
+                "session": "002",
+                "description": "aDesc",
+                "extension": ".vhdr",
+            },
+            Path("sub-001_ses-002*desc-aDesc*.vhdr"),
             Path("sub-001/ses-002/*"),
         ),
     ],

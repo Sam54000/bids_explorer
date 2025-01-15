@@ -3,7 +3,7 @@ name = "bids_explorer"
 version = "0.1.0"
 description = "A simple bids dataset explorer without being too strict"
 authors = ["Dr. Samuel Louviot <sam.louviot@gmail.com>"]
-license = "LGPL-3.0"
+license = "GPL-3.0-or-later"
 readme = "README.md"
 packages = [{include = "bids_explorer", from = "src"}]
 

@@ -11,10 +11,10 @@ from bids_explorer.architecture.mixins import (
     prepare_for_operations,
 )
 from bids_explorer.architecture.validation import validate_bids_file
-from bids_explorer.paths.bids import BidsPath
 from bids_explorer.paths.query import BidsQuery
 from bids_explorer.utils.database import set_database
 from bids_explorer.utils.errors import merge_error_logs, set_errors
+from bids_explorer.utils.parsing import parse_bids_filename
 
 
 class BidsArchitecture(BidsArchitectureMixin):
@@ -309,8 +309,8 @@ class BidsArchitecture(BidsArchitectureMixin):
 
             try:
                 validate_bids_file(file)
-                bids_path = BidsPath.from_filename(file)
-                self._add_file_to_database(file, bids_path, data)
+                entities = parse_bids_filename(file)
+                self._add_file_to_database(file, entities, data)
             except Exception as e:
                 self._add_error_to_log(file, e, error_flags)
 
@@ -321,21 +321,25 @@ class BidsArchitecture(BidsArchitectureMixin):
         return self
 
     def _add_file_to_database(
-        self, file: Path, bids_path: BidsPath, data: Dict[str, List[Any]]
+        self, file: Path, entities: dict, data: Dict[str, List[Any]]
     ) -> None:
         """Add file information to database dictionary.
 
         Args:
             file: Path object representing the file.
-            bids_path: BidsPath instance containing parsed BIDS entities.
+            entities: Dictionary containing parsed BIDS entities.
             data: Dictionary to store file information.
         """
-        for key, value in bids_path.__dict__.items():
-            if key == "root":
-                data["root"].append(self.root)
-            else:
-                data[key].append(value)
+        # Add root separately since it's not in entities
+        data["root"].append(self.root)
 
+        # Add all other entities
+        for key in data.keys():
+            if key in ["atime", "mtime", "ctime", "filename", "root"]:
+                continue
+            data[key].append(entities.get(key))
+
+        # Add file stats
         file_stats = file.stat()
         data["inode"].append(int(file_stats.st_ino))
         data["atime"].append(int(file_stats.st_atime))
