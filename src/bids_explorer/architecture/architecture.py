@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 from warnings import warn
 
+import numpy as np
 import pandas as pd
 
 from bids_explorer.architecture.mixins import (
@@ -72,16 +73,30 @@ class BidsArchitecture(BidsArchitectureMixin):
                 extension=extension,
             )
             self._database, self._errors = self.create_database()
+        else:
+            self._database = pd.DataFrame()
+            self._errors = pd.DataFrame()
 
     def __repr__(self) -> str:  # noqa: D105
-        return (
-            f"BidsArchitecture: {len(self._database)} files, "
-            f"{len(self._errors)} errors, "
-            f"subjects: {len(self._get_unique_values('subject'))}, "
-            f"sessions: {len(self._get_unique_values('session'))}, "
-            f"datatypes: {len(self._get_unique_values('datatype'))}, "
-            f"tasks: {len(self._get_unique_values('task'))}"
-        )
+        if hasattr(self, "_database"):
+            return (
+                f"BidsArchitecture: {len(self._database)} files, "
+                f"{len(self._errors)} errors, "
+                f"subjects: {len(self._get_unique_values('subject'))}, "
+                f"sessions: {len(self._get_unique_values('session'))}, "
+                f"datatypes: {len(self._get_unique_values('datatype'))}, "
+                f"tasks: {len(self._get_unique_values('task'))}"
+            )
+        else:
+            empty_repr = (
+                "BidsArchitecture: 0 files, "
+                "0 errors, "
+                "subjects: 0, "
+                "sessions: 0, "
+                "datatypes: 0, "
+                "tasks: 0"
+            )
+            return empty_repr
 
     def __str__(self) -> str:  # noqa: D105
         return self.__repr__()
@@ -95,8 +110,10 @@ class BidsArchitecture(BidsArchitectureMixin):
     def __setitem__(self, index: int, value: pd.DataFrame) -> None:  # noqa: D105
         raise NotImplementedError("Setting items is not supported")
 
-    def __iter__(self) -> Iterator[Path]:  # noqa: D105
-        return iter(self._database.iterrows())
+    def __iter__(self) -> Iterator[pd.DataFrame]:
+        """Iterate over rows in the database."""
+        for _, row in self._database.iterrows():
+            yield row
 
     def __add__(  # noqa: D105
         self,
@@ -158,9 +175,9 @@ class BidsArchitecture(BidsArchitectureMixin):
 
     @database.setter
     def database(self, value: pd.DataFrame) -> None:
-        valid_db = is_all_columns_valid(value)
+        valid_db = is_all_columns_valid(value, strict=True)
         if not valid_db:
-            raise ValueError("Database is not valid")
+            raise ValueError("Invalid or missing columns in database")
         self._database = value
 
     @property
@@ -180,17 +197,30 @@ class BidsArchitecture(BidsArchitectureMixin):
         self._errors = value
 
     def _get_unique_values(self, column: str) -> List[str]:
+        """Get unique values from a database column.
+
+        Args:
+            column: Name of the column to get unique values from.
+
+        Returns:
+            List of unique values, excluding None, empty strings, and NaN values.
+            Values are converted to strings and sorted.
+        """
         if self._database.empty:
             return []
 
-        else:
-            return sorted(
-                [
-                    elem
-                    for elem in self._database[column].unique()
-                    if elem is not None
-                ]
-            )
+        # Get unique values and convert to list for filtering
+        values = self._database[column].unique()
+
+        # Filter out None, empty strings, and NaN values
+        value_list = [
+            str(elem)  # Convert all values to strings
+            for elem in values
+            if pd.notna(elem)  # Handles both None and np.nan
+            and str(elem).strip() != ""  # Handles empty strings and whitespace
+        ]
+
+        return sorted(value_list)
 
     @property
     def subjects(self) -> List[str]:
@@ -405,6 +435,15 @@ class BidsArchitecture(BidsArchitectureMixin):
         start: int | str | None = None,
         stop: int | str | None = None,
     ) -> pd.core.series.Series:
+        # Validate input types
+        valid_types = (int, str, type(None))
+        if not isinstance(start, valid_types) or not isinstance(
+            stop, valid_types
+        ):
+            raise ValueError(
+                "Start and stop must be integers, strings, or None"
+            )
+
         if isinstance(start, str):
             start = int(start)
 
@@ -417,7 +456,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             start = min(dataframe_column)
 
         if stop is None or stop == "*":
-            stop = max(dataframe_column)
+            stop = max(dataframe_column) + 1
 
         return (start <= dataframe_column) & (dataframe_column < stop)
 
@@ -517,6 +556,9 @@ class BidsArchitecture(BidsArchitectureMixin):
         for key, value in kwargs.items():
             if value is None:
                 continue
+
+            if value == "":
+                return pd.Series(False, index=self._database.index)
 
             if isinstance(value, list):
                 matching_inodes = set(
