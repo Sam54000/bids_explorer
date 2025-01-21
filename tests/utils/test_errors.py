@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from bids_explorer.architecture.mixins import BidsArchitectureMixin
-from bids_explorer.utils.errors import merge_error_logs, set_errors
+from bids_explorer.utils.errors import merge_error_logs
 
 
 class TestBidsArchitecture(BidsArchitectureMixin):
@@ -13,30 +13,6 @@ class TestBidsArchitecture(BidsArchitectureMixin):
         """Initialize test class with optional errors."""
         self._errors = errors if errors is not None else pd.DataFrame()
         self._database = pd.DataFrame()
-
-
-def test_set_errors() -> None:
-    """Test setting error DataFrame on an object."""
-    arch = TestBidsArchitecture()
-    new_errors = pd.DataFrame(
-        {
-            "error_message": ["Error 1", "Error 2"],
-            "filename": ["file1.txt", "file2.txt"],
-            "inode": [1, 2],
-        }
-    )
-    set_errors(arch, new_errors)
-    pd.testing.assert_frame_equal(arch._errors, new_errors)
-
-    updated_errors = pd.DataFrame(
-        {
-            "error_message": ["Error 3"],
-            "filename": ["file3.txt"],
-            "inode": [3],
-        }
-    )
-    set_errors(arch, updated_errors)
-    pd.testing.assert_frame_equal(arch._errors, updated_errors)
 
 
 def test_merge_error_logs() -> None:
