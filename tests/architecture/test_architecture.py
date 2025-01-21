@@ -108,10 +108,8 @@ def test_architecture_select(bids_dataset: Path) -> None:
     ```
     """
     arch = BidsArchitecture(root=bids_dataset)
-    print(arch.database["subject"].unique())
 
     result = arch.select(subject="001")
-    print(result.database["subject"].unique())
     assert not arch.database.empty
     assert result.subjects == ["001"]
     assert len(result) == 30
@@ -148,6 +146,11 @@ def test_architecture_select(bids_dataset: Path) -> None:
     assert result.subjects == ["001"]
     assert result.tasks == ["aTask"]
     assert result.runs == ["01"]
+
+    result = arch.select(
+        subject="001", task="nonExistingTask", datatype="eeg", run="01"
+    )
+    assert result.database.empty
 
     arch = BidsArchitecture(
         root=bids_dataset, subject="001", session="01", task="aTask", run="01"

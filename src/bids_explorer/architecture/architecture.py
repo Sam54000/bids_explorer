@@ -69,19 +69,17 @@ class BidsArchitecture(BidsArchitectureMixin):
                 suffix=suffix,
                 extension=extension,
             )
-            self.create_database()
+            self._database, self._errors = self.create_database()
 
     def __repr__(self) -> str:  # noqa: D105
-        if not self._database.empty:
-            return (
-                f"BidsArchitecture: {len(self._database)} files, "
-                f"{len(self._errors)} errors, "
-                f"subjects: {len(self._database['subject'].unique())}, "
-                f"sessions: {len(self._database['session'].unique())}, "
-                f"datatypes: {len(self._database['datatype'].unique())}, "
-                f"tasks: {len(self._database['task'].unique())}"
-            )
-        return "BidsArchitecture: No database created yet."
+        return (
+            f"BidsArchitecture: {len(self._database)} files, "
+            f"{len(self._errors)} errors, "
+            f"subjects: {len(self._get_unique_values('subject'))}, "
+            f"sessions: {len(self._get_unique_values('session'))}, "
+            f"datatypes: {len(self._get_unique_values('datatype'))}, "
+            f"tasks: {len(self._get_unique_values('task'))}"
+        )
 
     def __str__(self) -> str:  # noqa: D105
         return self.__repr__()
@@ -153,12 +151,12 @@ class BidsArchitecture(BidsArchitectureMixin):
         """
         conditions = (
             hasattr(self, "_database"),
-            self._database.empty,
             self.root is not None,
         )
         if all(conditions):
-            self.create_database()
-        return self._database
+            return self._database
+        else:
+            return pd.DataFrame()
 
     @property
     def errors(self) -> pd.DataFrame:
@@ -169,21 +167,25 @@ class BidsArchitecture(BidsArchitectureMixin):
         """
         conditions = (
             hasattr(self, "_errors"),
-            self._errors.empty,
             self.root is not None,
         )
         if all(conditions):
-            self.create_database()
-        return self._errors
+            return self._errors
+        else:
+            return pd.DataFrame()
 
     def _get_unique_values(self, column: str) -> List[str]:
-        return sorted(
-            [
-                elem
-                for elem in self._database[column].unique()
-                if elem is not None
-            ]
-        )
+        if self._database.empty:
+            return []
+
+        else:
+            return sorted(
+                [
+                    elem
+                    for elem in self._database[column].unique()
+                    if elem is not None
+                ]
+            )
 
     @property
     def subjects(self) -> List[str]:
@@ -261,7 +263,7 @@ class BidsArchitecture(BidsArchitectureMixin):
     def extensions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("extension")
 
-    def create_database(self) -> "BidsArchitecture":
+    def create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Scan filesystem and build DataFrame of matching files.
 
         Walks through the BIDS directory structure and creates two DataFrames:
@@ -314,11 +316,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             except Exception as e:
                 self._add_error_to_log(file, e, error_flags)
 
-        self._database, self._errors = self._create_dataframes(
-            data, error_flags
-        )
-
-        return self
+        return self._create_dataframes(data, error_flags)
 
     def _add_file_to_database(
         self, file: Path, bids_path: BidsPath, data: Dict[str, List[Any]]
@@ -618,8 +616,15 @@ class BidsArchitecture(BidsArchitectureMixin):
             setattr(self, "_database", self._database.loc[mask])
             return self
 
-        new_instance = copy.deepcopy(self)
-        setattr(new_instance, "_database", new_instance._database.loc[mask])
+        new_instance = copy.copy(self)
+        if any(mask):
+            print("Mask is not empty")
+            new_database = self._database.loc[mask]
+        else:
+            print("Mask is empty")
+            new_database = pd.DataFrame()
+
+        setattr(new_instance, "_database", new_database)
         return new_instance
 
     def remove(
