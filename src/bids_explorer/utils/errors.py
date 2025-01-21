@@ -5,21 +5,6 @@ import pandas as pd
 from bids_explorer.architecture.mixins import BidsArchitectureMixin
 
 
-def set_errors(object: BidsArchitectureMixin, value: pd.DataFrame) -> None:
-    """Set the error DataFrame for an object.
-
-    Args:
-        object: The object to set errors on.
-        value: DataFrame containing error information to be set.
-    """
-    if hasattr(object, "errors"):
-        delattr(object, "errors")
-    if hasattr(object, "_errors"):
-        delattr(object, "_errors")
-
-    setattr(object, "_errors", value)
-
-
 def merge_error_logs(
     self: BidsArchitectureMixin, other: BidsArchitectureMixin
 ) -> pd.DataFrame:
