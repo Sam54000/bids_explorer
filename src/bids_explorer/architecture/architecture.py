@@ -618,10 +618,8 @@ class BidsArchitecture(BidsArchitectureMixin):
 
         new_instance = copy.copy(self)
         if any(mask):
-            print("Mask is not empty")
             new_database = self._database.loc[mask]
         else:
-            print("Mask is empty")
             new_database = pd.DataFrame()
 
         setattr(new_instance, "_database", new_database)
