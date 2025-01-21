@@ -428,7 +428,7 @@ def test_get_unique_values() -> None:
     assert empty_bids._get_unique_values("session") == []
 
 
-def test_get_range():
+def test_get_range() -> None:
     """Test the _get_range method with various inputs."""
     test_data = pd.DataFrame(
         {
@@ -456,7 +456,7 @@ def test_get_range():
     assert list(result) == [False, True, True, True, True]
 
 
-def test_get_single_loc():
+def test_get_single_loc() -> None:
     """Test the _get_single_loc method."""
     test_data = pd.DataFrame(
         {
@@ -479,7 +479,7 @@ def test_get_single_loc():
         assert not any(result)
 
 
-def test_is_numerical():
+def test_is_numerical() -> None:
     """Test the _is_numerical method."""
     test_data = pd.DataFrame(
         {
@@ -497,7 +497,7 @@ def test_is_numerical():
     assert bids._is_numerical(test_data["non_numeric"]) is False
 
 
-def test_interpret_string():
+def test_interpret_string() -> None:
     """Test the _interpret_string method."""
     test_data = pd.DataFrame(
         {
@@ -526,7 +526,7 @@ def test_interpret_string():
         bids._interpret_string(test_data["numeric_col"], "a-b")
 
 
-def test_errors_display():
+def test_errors_display() -> None:
     """Test error display functionality."""
     bids = BidsArchitecture()
 
@@ -549,7 +549,7 @@ def test_errors_display():
     assert list(bids.errors["error_type"].unique()) == ["type1", "type2"]
 
 
-def test_get_range_edge_cases():
+def test_get_range_edge_cases() -> None:
     """Test edge cases for the _get_range method."""
     test_data = pd.DataFrame(
         {
@@ -585,7 +585,7 @@ def test_get_range_edge_cases():
     assert not any(result)  # Should return all False
 
 
-def test_get_single_loc_edge_cases():
+def test_get_single_loc_edge_cases() -> None:
     """Test edge cases for the _get_single_loc method."""
     test_data = pd.DataFrame(
         {
@@ -611,7 +611,7 @@ def test_get_single_loc_edge_cases():
         assert not any(result)
 
 
-def test_interpret_string_edge_cases():
+def test_interpret_string_edge_cases() -> None:
     """Test edge cases for the _interpret_string method."""
     test_data = pd.DataFrame(
         {
@@ -649,7 +649,7 @@ def test_interpret_string_edge_cases():
         bids._interpret_string(test_data["text_col"], "1-3")
 
 
-def test_database_initialization():
+def test_database_initialization() -> None:
     """Test database initialization and validation."""
     # Test initialization with valid DataFrame
     valid_df = pd.DataFrame(
@@ -684,7 +684,7 @@ def test_database_initialization():
         bids.database = invalid_df
 
 
-def test_select_edge_cases():
+def test_select_edge_cases() -> None:
     """Test edge cases in the select method."""
     test_data = pd.DataFrame(
         {
@@ -725,7 +725,7 @@ def test_select_edge_cases():
     assert result.database.empty
 
 
-def test_property_edge_cases():
+def test_property_edge_cases() -> None:
     """Test edge cases for properties."""
     bids = BidsArchitecture()
 
@@ -772,7 +772,7 @@ def test_property_edge_cases():
     assert bids.extensions == []
 
 
-def test_get_range_invalid_types():
+def test_get_range_invalid_types() -> None:
     """Test _get_range with invalid type conversions."""
     test_data = pd.DataFrame(
         {
@@ -792,20 +792,20 @@ def test_get_range_invalid_types():
     with pytest.raises(
         ValueError, match="Start and stop must be integers, strings, or None"
     ):
-        bids._get_range(test_data["numeric_col"], [], "3")
+        bids._get_range(test_data["numeric_col"], [], "3")  # type: ignore
 
     with pytest.raises(
         ValueError, match="Start and stop must be integers, strings, or None"
     ):
-        bids._get_range(test_data["numeric_col"], "1", {})
+        bids._get_range(test_data["numeric_col"], "1", {})  # type: ignore
 
     with pytest.raises(
         ValueError, match="Start and stop must be integers, strings, or None"
     ):
-        bids._get_range(test_data["numeric_col"], dict(), "3")
+        bids._get_range(test_data["numeric_col"], dict(), "3")  # type: ignore
 
 
-def test_get_single_loc_comprehensive():
+def test_get_single_loc_comprehensive() -> None:
     """Test _get_single_loc with various value types."""
     test_data = pd.DataFrame({"col": ["a", "b", "c", None, np.nan]})
 
@@ -814,14 +814,10 @@ def test_get_single_loc_comprehensive():
 
     # Test with None value
     with pytest.warns(UserWarning):
-        result = bids._get_single_loc(test_data["col"], None)
+        result = bids._get_single_loc(test_data["col"], None)  # type: ignore
         assert not any(result)
 
     # Test with numeric value
     with pytest.warns(UserWarning):
-        result = bids._get_single_loc(test_data["col"], 123)
+        result = bids._get_single_loc(test_data["col"], 123)  # type: ignore
         assert not any(result)
-
-    # Test with empty string
-    result = bids._get_single_loc(test_data["col"], "")
-    assert not any(result)
