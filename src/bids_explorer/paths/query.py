@@ -1,15 +1,14 @@
 """Query functionality for BIDS paths."""
 
 import os
+import re  # Add this at the top of the file
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator, Optional
 
-from bids_explorer.paths.bids import BidsPath
-
 
 @dataclass
-class BidsQuery(BidsPath):
+class BidsQuery:
     """Class for querying BIDS datasets using wildcards and patterns.
 
     Extends BidsPath to support flexible querying of BIDS datasets using
@@ -17,7 +16,6 @@ class BidsQuery(BidsPath):
     filesystem-compatible glob patterns.
 
     Attributes:
-        Inherits all attributes from BidsPath
         All attributes support wildcards (*) for flexible matching
     """
 
@@ -35,7 +33,7 @@ class BidsQuery(BidsPath):
     extension: Optional[str] = None
 
     def __post_init__(self) -> None:  # noqa: D105
-        super().__post_init__()
+        pass
 
     def _format_mandatory_attrs(self, mandatory_attrs: list[str]) -> str:
         str_attrs = [
@@ -66,18 +64,24 @@ class BidsQuery(BidsPath):
         str_attrs = "_".join(
             [
                 f"{string_key_reference.get(attr)}{getattr(self,attr)}"
-                if attr is not None and attr != "space"
+                if getattr(self, attr) is not None and attr != "space"
                 else "*"
                 for attr in optional_attrs
             ]
         )
 
-        str_attrs = str_attrs.replace("_*_", "*")
+        # Replace any combination of asterisks and underscores with a single asterisk
 
         if not self._all_optional_exist(optional_attrs=optional_attrs):
             str_attrs += "*"
+            # Clean up again in case we added another *
+            # str_attrs = re.sub(r'(\*_+\*|_+\*_+|\*+|\*+_|_+\*)', '*',
+            # str_attrs)
+        for i in range(3):
+            str_attrs = re.sub(
+                r"(\*_+\*|_+\*_+|\*+|\*+_|_+\*)", "*", str_attrs
+            )
 
-        str_attrs = str_attrs.replace("**", "*")
         print(f"str_optional: {str_attrs}")
 
         return str_attrs
@@ -111,17 +115,32 @@ class BidsQuery(BidsPath):
 
         if suffix_str is not None and extension_str is not None:
             suffix_extension_str = ".".join([suffix_str, extension_str])
+        else:
+            suffix_extension_str = "*"
 
-        suffix_extension_str = suffix_extension_str.replace("*.*", "*")
+        # suffix_extension_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
+        # suffix_extension_str)
         opt_suff_ext_str = "_".join(
             [formated_optional_str, suffix_extension_str]
         )
-        opt_suff_ext_str = opt_suff_ext_str.replace("*_*", "*")
+        if self._all_optional_exist(optional_attrs):
+            print(f"all optional exist")
+            full_formated_str = "_".join(
+                [formated_mandatory_str, opt_suff_ext_str]
+            )
+        else:
+            full_formated_str = "".join(
+                [formated_mandatory_str, opt_suff_ext_str]
+            )
 
-        full_formated_str = "_".join(
-            [formated_mandatory_str, opt_suff_ext_str]
-        )
-        full_formated_str = full_formated_str.replace("*_*", "*")
+        # full_formated_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
+        # full_formated_str)
+        # full_formated_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
+        # full_formated_str)
+        for i in range(3):
+            full_formated_str = re.sub(
+                r"(\*_+\*|_+\*_+|\*+)", "*", full_formated_str
+            )
 
         return Path(full_formated_str)
 
