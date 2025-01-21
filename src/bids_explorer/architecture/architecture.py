@@ -10,11 +10,13 @@ from bids_explorer.architecture.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
-from bids_explorer.architecture.validation import validate_bids_file
+from bids_explorer.architecture.validation import (
+    is_all_columns_valid,
+    validate_bids_file,
+)
 from bids_explorer.paths.bids import BidsPath
 from bids_explorer.paths.query import BidsQuery
-from bids_explorer.utils.database import set_database
-from bids_explorer.utils.errors import merge_error_logs, set_errors
+from bids_explorer.utils.errors import merge_error_logs
 
 
 class BidsArchitecture(BidsArchitectureMixin):
@@ -106,8 +108,8 @@ class BidsArchitecture(BidsArchitectureMixin):
             [self._database, other._database.loc[non_duplicates]]
         )
         new_instance = BidsArchitecture()
-        set_database(new_instance, combined_db)
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = combined_db
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     def __sub__(  # noqa: D105
@@ -117,8 +119,8 @@ class BidsArchitecture(BidsArchitectureMixin):
         indices_other = prepare_for_operations(self, other)
         remaining_indices = self._database.index.difference(indices_other)
         new_instance = BidsArchitecture()
-        set_database(new_instance, self._database.loc[remaining_indices])
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = self._database.loc[remaining_indices]
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     def __and__(  # noqa: D105
@@ -129,8 +131,8 @@ class BidsArchitecture(BidsArchitectureMixin):
         common_indices = self._database.index.intersection(indices_other)
 
         new_instance = BidsArchitecture()
-        set_database(new_instance, self._database.loc[common_indices])
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = self._database.loc[common_indices]
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     @property
@@ -149,14 +151,17 @@ class BidsArchitecture(BidsArchitectureMixin):
         This DataFrame serves as the core representation of the BIDS dataset
         and is used for all operations.
         """
-        conditions = (
-            hasattr(self, "_database"),
-            self.root is not None,
-        )
-        if all(conditions):
+        if hasattr(self, "_database"):
             return self._database
         else:
             return pd.DataFrame()
+
+    @database.setter
+    def database(self, value: pd.DataFrame) -> None:
+        valid_db = is_all_columns_valid(value)
+        if not valid_db:
+            raise ValueError("Database is not valid")
+        self._database = value
 
     @property
     def errors(self) -> pd.DataFrame:
@@ -165,14 +170,14 @@ class BidsArchitecture(BidsArchitectureMixin):
         This DataFrame contains information about files that failed validation
         during the database creation process.
         """
-        conditions = (
-            hasattr(self, "_errors"),
-            self.root is not None,
-        )
-        if all(conditions):
+        if hasattr(self, "_errors"):
             return self._errors
         else:
             return pd.DataFrame()
+
+    @errors.setter
+    def errors(self, value: pd.DataFrame) -> None:
+        self._errors = value
 
     def _get_unique_values(self, column: str) -> List[str]:
         if self._database.empty:
