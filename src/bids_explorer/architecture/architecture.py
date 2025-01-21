@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 from warnings import warn
 
-import numpy as np
 import pandas as pd
 
 from bids_explorer.architecture.mixins import (
@@ -203,7 +202,8 @@ class BidsArchitecture(BidsArchitectureMixin):
             column: Name of the column to get unique values from.
 
         Returns:
-            List of unique values, excluding None, empty strings, and NaN values.
+            List of unique values, excluding None, empty strings, and NaN
+            values.
             Values are converted to strings and sorted.
         """
         if self._database.empty:
@@ -461,13 +461,14 @@ class BidsArchitecture(BidsArchitectureMixin):
         return (start <= dataframe_column) & (dataframe_column < stop)
 
     def _get_single_loc(
-        self, dataframe_column: pd.core.series.Series, value: str
+        self, dataframe_column: pd.core.series.Series, value: str | None
     ) -> pd.core.series.Series:
+        if not isinstance(value, (str, type(None))):
+            value = str(value)
         locations_found = dataframe_column == value
         if not any(locations_found):
             warn("No location corresponding found in the database")
             locations_found.apply(lambda s: not (s))
-
         return locations_found
 
     def _is_numerical(
@@ -613,7 +614,7 @@ class BidsArchitecture(BidsArchitectureMixin):
     def select(
         self,
         inplace: bool = False,
-        **kwargs: str | list[str] | None,
+        **kwargs: str | list[None | str] | None,
     ) -> "BidsArchitecture":
         """Select files from database based on BIDS entities.
 
@@ -658,7 +659,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             ... )
 
         """
-        mask = self._create_mask(**kwargs)
+        mask = self._create_mask(**kwargs)  # type: ignore
         if inplace:
             setattr(self, "_database", self._database.loc[mask])
             return self
