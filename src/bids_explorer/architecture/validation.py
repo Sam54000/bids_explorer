@@ -29,7 +29,7 @@ class BidsValidationError(Exception):
     """Exception raised for BIDS validation errors."""
 
 
-def is_all_columns_valid(database: pd.DataFrame, strict: bool = True) -> bool:
+def all_columns_valid(database: pd.DataFrame, strict: bool = True) -> bool:
     """Check if a DataFrame contains all required BIDS columns.
 
     Args:

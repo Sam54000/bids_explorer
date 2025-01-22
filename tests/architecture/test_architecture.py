@@ -149,6 +149,14 @@ def test_architecture_select(bids_dataset: Path) -> None:
     assert result.runs == ["01"]
 
     result = arch.select(
+        subject="001-003", task="aTask", datatype="eeg", run="01"
+    )
+    assert len(result) == 18
+    assert result.subjects == ["001", "002", "003"]
+    assert result.tasks == ["aTask"]
+    assert result.runs == ["01"]
+
+    result = arch.select(
         subject="001", task="nonExistingTask", datatype="eeg", run="01"
     )
     assert result.database.empty
@@ -443,16 +451,19 @@ def test_get_range() -> None:
     result = bids._get_range(test_data["numeric_col"], "2", "4")
     assert list(result) == [False, True, True, False, False]
 
+    result = bids._get_range(test_data["numeric_col"], "02", "04")
+    assert list(result) == [False, True, True, False, False]
+
     # Test with integers
     result = bids._get_range(test_data["numeric_col"], 2, 4)
     assert list(result) == [False, True, True, False, False]
 
     # Test with None/wildcard for stop
-    result = bids._get_range(test_data["numeric_col"], None, "4")
+    result = bids._get_range(test_data["numeric_col"], None, "04")
     assert list(result) == [True, True, True, False, False]
 
     # Test with None/wildcard for start
-    result = bids._get_range(test_data["numeric_col"], "2", None)
+    result = bids._get_range(test_data["numeric_col"], "002", None)
     assert list(result) == [False, True, True, True, True]
 
 
@@ -501,7 +512,7 @@ def test_interpret_string() -> None:
     """Test the _interpret_string method."""
     test_data = pd.DataFrame(
         {
-            "numeric_col": ["1", "2", "3", "4", "5"],
+            "numeric_col": ["01", "02", "03", "04", "05"],
         }
     )
 
@@ -509,14 +520,14 @@ def test_interpret_string() -> None:
     bids._database = test_data
 
     # Test range pattern
-    result = bids._interpret_string(test_data["numeric_col"], "2-4")
+    result = bids._interpret_string(test_data["numeric_col"], "02-04")
     assert list(result) == [False, True, True, False, False]
 
     # Test wildcard range
-    result = bids._interpret_string(test_data["numeric_col"], "*-4")
+    result = bids._interpret_string(test_data["numeric_col"], "*-04")
     assert list(result) == [True, True, True, False, False]
 
-    result = bids._interpret_string(test_data["numeric_col"], "2-*")
+    result = bids._interpret_string(test_data["numeric_col"], "02-*")
     assert list(result) == [False, True, True, True, True]
 
     # Test invalid range format
@@ -821,3 +832,61 @@ def test_get_single_loc_comprehensive() -> None:
     with pytest.warns(UserWarning):
         result = bids._get_single_loc(test_data["col"], 123)  # type: ignore
         assert not any(result)
+
+
+def test_create_mask() -> None:
+    """Test the _create_mask method with various filtering scenarios."""
+    test_data = pd.DataFrame(
+        {
+            "root": ["path1", "path2", "path3"],
+            "subject": ["001", "002", "003"],
+            "session": ["01", "02", "03"],
+            "datatype": ["eeg", "meg", "eeg"],
+            "task": ["rest", "task", "rest"],
+            "run": ["01", "02", "03"],
+            "acquisition": ["full", None, "partial"],
+            "description": ["desc1", "", "desc3"],
+            "suffix": ["eeg", "meg", "eeg"],
+            "extension": [".vhdr", ".fif", ".vhdr"],
+            "atime": [1000, 2000, 3000],
+            "mtime": [1000, 2000, 3000],
+            "ctime": [1000, 2000, 3000],
+            "filename": ["file1.vhdr", "file2.fif", "file3.vhdr"],
+        },
+        index=[1465, 2241, 3123],
+    )
+
+    bids = BidsArchitecture()
+    bids._database = test_data
+
+    # Test basic single value filtering
+    mask = bids._create_mask(subject="001")
+    assert list(mask) == [True, False, False]
+
+    # Test multiple criteria
+    mask = bids._create_mask(subject="001", datatype="eeg")
+    assert list(mask) == [True, False, False]
+
+    # Test numerical range with hyphen
+    mask = bids._create_mask(subject="001-002")
+    assert list(mask) == [True, True, False]
+
+    # Test with wildcard range
+    mask = bids._create_mask(subject="002-*")
+    assert list(mask) == [False, True, True]
+
+    # Test with list of values
+    mask = bids._create_mask(datatype=["eeg", "meg"])
+    assert list(mask) == [True, True, True]
+
+    # Test with invalid key
+    with pytest.raises(ValueError, match="Invalid selection keys"):
+        bids._create_mask(invalid_key="value")
+
+    # Test with multiple ranges
+    mask = bids._create_mask(subject="001-002", run="01-02")
+    assert list(mask) == [True, True, False]
+
+    # Test with mixed criteria (range and exact match)
+    mask = bids._create_mask(subject="001-003", datatype="eeg")
+    assert list(mask) == [True, False, True]

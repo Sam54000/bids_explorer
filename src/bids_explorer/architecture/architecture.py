@@ -10,12 +10,14 @@ from bids_explorer.architecture.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
-
-from bids_explorer.architecture.validation import validate_bids_file
+from bids_explorer.architecture.validation import (
+    all_columns_valid,
+    validate_bids_file,
+)
 from bids_explorer.paths.query import BidsQuery
-from bids_explorer.utils.database import set_database
-from bids_explorer.utils.errors import merge_error_logs, set_errors
+from bids_explorer.utils.errors import merge_error_logs
 from bids_explorer.utils.parsing import parse_bids_filename
+
 
 class BidsArchitecture(BidsArchitectureMixin):
     """Main class for handling BIDS directory structure.
@@ -172,7 +174,7 @@ class BidsArchitecture(BidsArchitectureMixin):
 
     @database.setter
     def database(self, value: pd.DataFrame) -> None:
-        valid_db = is_all_columns_valid(value, strict=True)
+        valid_db = all_columns_valid(value, strict=True)
         if not valid_db:
             raise ValueError("Invalid or missing columns in database")
         self._database = value
@@ -366,11 +368,10 @@ class BidsArchitecture(BidsArchitectureMixin):
 
         # Add all other entities
         for key in data.keys():
-            if key in ["atime", "mtime", "ctime", "filename", "root"]:
+            if key in ["atime", "mtime", "ctime", "filename", "root", "inode"]:
                 continue
             data[key].append(entities.get(key))
 
-        # Add file stats
         file_stats = file.stat()
         data["inode"].append(int(file_stats.st_ino))
         data["atime"].append(int(file_stats.st_atime))
@@ -594,22 +595,22 @@ class BidsArchitecture(BidsArchitectureMixin):
 
                 if all(conditions):
                     col_numeric = pd.to_numeric(col, errors="coerce")
-
                     start_val = (
                         int(start) if start.isdigit() else col_numeric.min()
                     )
                     stop_val = (
                         int(stop) if stop.isdigit() else col_numeric.max()
                     )
-
                     range_mask = (col_numeric >= start_val) & (
                         col_numeric <= stop_val
                     )
+                    print(range_mask)
                     matching_inodes = set(self._database[range_mask].index)
                     valid_inodes &= matching_inodes
 
-            matching_inodes = set(self._database[col == value].index)
-            valid_inodes &= matching_inodes
+            else:
+                matching_inodes = set(self._database[col == value].index)
+                valid_inodes &= matching_inodes
 
         return self._database.index.isin(valid_inodes)
 

@@ -6,13 +6,13 @@ import pytest
 
 from bids_explorer.architecture.validation import (
     BidsValidationError,
+    all_columns_valid,
     get_invalid_columns,
-    is_all_columns_valid,
     validate_bids_file,
 )
 
 
-def test_is_all_columns_valid() -> None:
+def test_all_columns_valid() -> None:
     """Test validation of DataFrame columns."""
     valid_df = pd.DataFrame(
         columns=[
@@ -32,10 +32,10 @@ def test_is_all_columns_valid() -> None:
             "filename",
         ]
     )
-    assert is_all_columns_valid(valid_df, strict=True)
+    assert all_columns_valid(valid_df, strict=True)
 
     invalid_df = pd.DataFrame(columns=["subject", "invalid_column"])
-    assert not is_all_columns_valid(invalid_df, strict=True)
+    assert not all_columns_valid(invalid_df, strict=True)
 
 
 def test_get_invalid_columns() -> None:

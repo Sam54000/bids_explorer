@@ -35,13 +35,12 @@ class BidsQuery:
     def __post_init__(self) -> None:  # noqa: D105
         pass
 
-    def _format_mandatory_attrs(self, mandatory_attrs: list[str]) -> str:
+    def _format_mandatory_attrs(self) -> str:
         str_attrs = [
             f"sub-{self.subject or '*'}",
             f"ses-{self.session or '*'}",
         ]
 
-        print(f"str_mandatory: {'_'.join(str_attrs)}")
         return "_".join(str_attrs)
 
     def _all_optional_exist(self, optional_attrs: list[str]) -> bool:
@@ -53,7 +52,7 @@ class BidsQuery:
         condition_on_electrode_file = self.space is not None
         return condition_on_electrode_file or all(condition_regular_files)
 
-    def _format_optional_attrs(self, optional_attrs: list[str]) -> str:
+    def _format_optional_attrs(self, optional_attrs: list[str]) -> str | None:
         string_key_reference = {
             "task": "task-",
             "acquisition": "acq-",
@@ -70,77 +69,101 @@ class BidsQuery:
             ]
         )
 
-        # Replace any combination of asterisks and underscores with a single asterisk
-
-        if not self._all_optional_exist(optional_attrs=optional_attrs):
-            str_attrs += "*"
-            # Clean up again in case we added another *
-            # str_attrs = re.sub(r'(\*_+\*|_+\*_+|\*+|\*+_|_+\*)', '*',
-            # str_attrs)
-        for i in range(3):
+        for i in range(2):
             str_attrs = re.sub(
-                r"(\*_+\*|_+\*_+|\*+|\*+_|_+\*)", "*", str_attrs
+                r"(\*+_)+|(_\*+)+|(\*+_\*+)+|(_\*+_)+|\*{2,}", "*", str_attrs
             )
 
-        print(f"str_optional: {str_attrs}")
+        if not self._all_optional_exist(optional_attrs=optional_attrs):
+            str_attrs = f"*{str_attrs}*"
+            str_attrs = re.sub(
+                r"(\*+_)+|(_\*+)+|(\*+_\*+)+|(_\*+_)+|\*{2,}", "*", str_attrs
+            )
 
-        return str_attrs
+        if str_attrs == "*":
+            return None
+        else:
+            return str_attrs
+
+    def _format_suffix_extension(
+        self, optional_attrs: list[str]
+    ) -> str | None:
+        if (
+            self.suffix is None
+            and self._all_optional_exist(optional_attrs)
+            and self.extension is None
+        ):
+            return "*"
+
+        elif self.suffix is not None and self.extension is None:
+            return f"{self.suffix}.*"
+
+        elif self.suffix is None and self.extension is not None:
+            return f"*.{self.extension.replace(".", "")}"
+
+        elif self.suffix is not None and self.extension is not None:
+            return ".".join([self.suffix, self.extension.replace(".", "")])
+
+        else:
+            return None
+
+    def _format_opt_suffix_extension(
+        self,
+        suffix_extension_str: str | None,
+        formated_optional_str: str | None,
+    ) -> str | None:
+        if (
+            suffix_extension_str is not None
+            and formated_optional_str is not None
+        ):
+            return "_".join([formated_optional_str, suffix_extension_str])
+        elif (
+            suffix_extension_str is not None and formated_optional_str is None
+        ):
+            return suffix_extension_str
+
+        elif (
+            formated_optional_str is not None and suffix_extension_str is None
+        ):
+            return formated_optional_str
+        else:
+            return None
 
     def _build_query_filename(self) -> Path:
         """Build the query."""
-        mandatory_attrs = ["subject", "session", "datatype"]
         optional_attrs = [
-            "space",
+            # "space", # Future implementation should take account of space.
             "task",
             "acquisition",
             "run",
             "recording",
             "description",
         ]
-
-        formated_mandatory_str = self._format_mandatory_attrs(mandatory_attrs)
+        formated_mandatory_str = self._format_mandatory_attrs()
         formated_optional_str = self._format_optional_attrs(optional_attrs)
-        if not self._all_optional_exist(optional_attrs):
-            formated_mandatory_str += "*"
-
-        if self.suffix is None and self._all_optional_exist(optional_attrs):
-            suffix_str: str | None = "*"
-        else:
-            suffix_str = self.suffix
-
-        if suffix_str is not None:
-            extension_str: str | None = "*"
-        else:
-            extension_str = self.extension
-
-        if suffix_str is not None and extension_str is not None:
-            suffix_extension_str = ".".join([suffix_str, extension_str])
-        else:
-            suffix_extension_str = "*"
-
-        # suffix_extension_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
-        # suffix_extension_str)
-        opt_suff_ext_str = "_".join(
-            [formated_optional_str, suffix_extension_str]
+        suffix_extension_str = self._format_suffix_extension(optional_attrs)
+        opt_suff_ext_str = self._format_opt_suffix_extension(
+            suffix_extension_str, formated_optional_str
         )
-        if self._all_optional_exist(optional_attrs):
-            print(f"all optional exist")
+
+        if opt_suff_ext_str is None:
+            formated_mandatory_str += "*"
+            full_formated_str = formated_mandatory_str
+        elif (
+            formated_optional_str is None and suffix_extension_str is not None
+        ):
+            formated_mandatory_str += "*"
+            full_formated_str = "_".join(
+                [formated_mandatory_str, suffix_extension_str]
+            )
+        else:
             full_formated_str = "_".join(
                 [formated_mandatory_str, opt_suff_ext_str]
             )
-        else:
-            full_formated_str = "".join(
-                [formated_mandatory_str, opt_suff_ext_str]
-            )
 
-        # full_formated_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
-        # full_formated_str)
-        # full_formated_str = re.sub(r'(\*_+\*|_+\*_+|\*+)', '*',
-        # full_formated_str)
-        for i in range(3):
-            full_formated_str = re.sub(
-                r"(\*_+\*|_+\*_+|\*+)", "*", full_formated_str
-            )
+        full_formated_str = re.sub(
+            r"(\*+_\*+)+|(_\*+_)+|\*{2,}", "*", full_formated_str
+        )
 
         return Path(full_formated_str)
 
@@ -154,13 +177,11 @@ class BidsQuery:
     @property
     def filename(self) -> Path:
         """Get filename pattern for querying."""
-
         return self._build_query_filename()
 
     @property
     def relative_path(self) -> Path:
         """Get relative path for querying."""
-
         return self._build_query_pathname()
 
     @property

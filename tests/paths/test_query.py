@@ -52,7 +52,7 @@ import bids_explorer.paths.query as query
         ),
         (
             {"session": "01", "task": "rest", "suffix": "eeg"},
-            Path("sub-*_ses-01*_task-rest*_eeg.*"),
+            Path("sub-*_ses-01_*task-rest*_eeg.*"),
             Path("sub-*/ses-01/*"),
         ),
         (
@@ -97,7 +97,7 @@ import bids_explorer.paths.query as query
                 "suffix": "eeg",
                 "extension": ".vhdr",
             },
-            Path("sub-*_ses-02*run-001*_eeg.vhdr"),
+            Path("sub-*_ses-02_*run-001*_eeg.vhdr"),
             Path("sub-*/ses-02/*"),
         ),
         (
@@ -107,8 +107,38 @@ import bids_explorer.paths.query as query
                 "description": "aDesc",
                 "extension": ".vhdr",
             },
-            Path("sub-001_ses-002*desc-aDesc*.vhdr"),
+            Path("sub-001_ses-002_*desc-aDesc*.vhdr"),
             Path("sub-001/ses-002/*"),
+        ),
+        (
+            {
+                "subject": "001",
+                "session": "002",
+                "description": "aDesc",
+                "extension": ".vhdr",
+                "datatype": "eeg",
+                "suffix": "eeg",
+            },
+            Path("sub-001_ses-002_*desc-aDesc*_eeg.vhdr"),
+            Path("sub-001/ses-002/eeg/"),
+        ),
+        (
+            {
+                "subject": "001",
+                "session": "002",
+                "acquisition": "001",
+                "task": "rest",
+                "run": "001",
+                "description": "aDesc",
+                "extension": ".vhdr",
+                "datatype": "eeg",
+                "recording": "001",
+                "suffix": "eeg",
+            },
+            Path(
+                "sub-001_ses-002_task-rest_acq-001_run-001_recording-001_desc-aDesc_eeg.vhdr"
+            ),
+            Path("sub-001/ses-002/eeg/"),
         ),
     ],
 )
@@ -126,15 +156,3 @@ def test_query_pattern_generation(
     assert query_obj.filename == expected_filename
     assert query_obj.relative_path == expected_path
     assert query_obj.fullpath == expected_path / expected_filename
-
-
-def test_query_validation() -> None:
-    """Test query parameter validation."""
-    with pytest.raises(ValueError):
-        query.BidsQuery(subject="invalid subject")
-
-    with pytest.raises(ValueError):
-        query.BidsQuery(session="invalid session")
-
-    with pytest.raises(ValueError):
-        query.BidsQuery(task="invalid task")

@@ -3,7 +3,7 @@ from typing import Union
 
 import pandas as pd
 
-from bids_explorer.architecture.validation import is_all_columns_valid
+from bids_explorer.architecture.validation import all_columns_valid
 
 
 def prepare_for_operations(
@@ -43,7 +43,7 @@ def prepare_for_operations(
     if isinstance(object2, pd.DataFrame):
         return object2.index
     elif isinstance(object2, BidsArchitectureMixin):
-        if not is_all_columns_valid(object2._database):
+        if not all_columns_valid(object2._database):
             raise ValueError(
                 f"{object2.__class__.__name__} has invalid columns"
             )
