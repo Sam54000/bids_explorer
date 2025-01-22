@@ -99,10 +99,12 @@ class BidsQuery:
             return f"{self.suffix}.*"
 
         elif self.suffix is None and self.extension is not None:
-            return f"*.{self.extension.replace(".", "")}"
+            self.extension = self.extension.replace(".", "")
+            return f"*.{self.extension}"
 
         elif self.suffix is not None and self.extension is not None:
-            return ".".join([self.suffix, self.extension.replace(".", "")])
+            self.extension = self.extension.replace(".", "")
+            return ".".join([self.suffix, self.extension])
 
         else:
             return None
