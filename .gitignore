@@ -163,6 +163,4 @@ cython_debug/
 
 # OS specific files
 .DS_Store
-
-# History files
 .history/

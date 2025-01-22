@@ -10,12 +10,12 @@ from bids_explorer.architecture.mixins import (
     BidsArchitectureMixin,
     prepare_for_operations,
 )
+
 from bids_explorer.architecture.validation import validate_bids_file
 from bids_explorer.paths.query import BidsQuery
 from bids_explorer.utils.database import set_database
 from bids_explorer.utils.errors import merge_error_logs, set_errors
 from bids_explorer.utils.parsing import parse_bids_filename
-
 
 class BidsArchitecture(BidsArchitectureMixin):
     """Main class for handling BIDS directory structure.
@@ -69,19 +69,31 @@ class BidsArchitecture(BidsArchitectureMixin):
                 suffix=suffix,
                 extension=extension,
             )
-            self.create_database()
+            self._database, self._errors = self.create_database()
+        else:
+            self._database = pd.DataFrame()
+            self._errors = pd.DataFrame()
 
     def __repr__(self) -> str:  # noqa: D105
-        if not self._database.empty:
+        if hasattr(self, "_database"):
             return (
                 f"BidsArchitecture: {len(self._database)} files, "
                 f"{len(self._errors)} errors, "
-                f"subjects: {len(self._database['subject'].unique())}, "
-                f"sessions: {len(self._database['session'].unique())}, "
-                f"datatypes: {len(self._database['datatype'].unique())}, "
-                f"tasks: {len(self._database['task'].unique())}"
+                f"subjects: {len(self._get_unique_values('subject'))}, "
+                f"sessions: {len(self._get_unique_values('session'))}, "
+                f"datatypes: {len(self._get_unique_values('datatype'))}, "
+                f"tasks: {len(self._get_unique_values('task'))}"
             )
-        return "BidsArchitecture: No database created yet."
+        else:
+            empty_repr = (
+                "BidsArchitecture: 0 files, "
+                "0 errors, "
+                "subjects: 0, "
+                "sessions: 0, "
+                "datatypes: 0, "
+                "tasks: 0"
+            )
+            return empty_repr
 
     def __str__(self) -> str:  # noqa: D105
         return self.__repr__()
@@ -95,8 +107,10 @@ class BidsArchitecture(BidsArchitectureMixin):
     def __setitem__(self, index: int, value: pd.DataFrame) -> None:  # noqa: D105
         raise NotImplementedError("Setting items is not supported")
 
-    def __iter__(self) -> Iterator[Path]:  # noqa: D105
-        return iter(self._database.iterrows())
+    def __iter__(self) -> Iterator[pd.DataFrame]:
+        """Iterate over rows in the database."""
+        for _, row in self._database.iterrows():
+            yield row
 
     def __add__(  # noqa: D105
         self,
@@ -108,8 +122,8 @@ class BidsArchitecture(BidsArchitectureMixin):
             [self._database, other._database.loc[non_duplicates]]
         )
         new_instance = BidsArchitecture()
-        set_database(new_instance, combined_db)
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = combined_db
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     def __sub__(  # noqa: D105
@@ -119,8 +133,8 @@ class BidsArchitecture(BidsArchitectureMixin):
         indices_other = prepare_for_operations(self, other)
         remaining_indices = self._database.index.difference(indices_other)
         new_instance = BidsArchitecture()
-        set_database(new_instance, self._database.loc[remaining_indices])
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = self._database.loc[remaining_indices]
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     def __and__(  # noqa: D105
@@ -131,8 +145,8 @@ class BidsArchitecture(BidsArchitectureMixin):
         common_indices = self._database.index.intersection(indices_other)
 
         new_instance = BidsArchitecture()
-        set_database(new_instance, self._database.loc[common_indices])
-        set_errors(new_instance, merge_error_logs(self, other))
+        new_instance._database = self._database.loc[common_indices]
+        new_instance._errors = merge_error_logs(self, other)
         return new_instance
 
     @property
@@ -151,14 +165,17 @@ class BidsArchitecture(BidsArchitectureMixin):
         This DataFrame serves as the core representation of the BIDS dataset
         and is used for all operations.
         """
-        conditions = (
-            hasattr(self, "_database"),
-            self._database.empty,
-            self.root is not None,
-        )
-        if all(conditions):
-            self.create_database()
-        return self._database
+        if hasattr(self, "_database"):
+            return self._database
+        else:
+            return pd.DataFrame()
+
+    @database.setter
+    def database(self, value: pd.DataFrame) -> None:
+        valid_db = is_all_columns_valid(value, strict=True)
+        if not valid_db:
+            raise ValueError("Invalid or missing columns in database")
+        self._database = value
 
     @property
     def errors(self) -> pd.DataFrame:
@@ -167,23 +184,41 @@ class BidsArchitecture(BidsArchitectureMixin):
         This DataFrame contains information about files that failed validation
         during the database creation process.
         """
-        conditions = (
-            hasattr(self, "_errors"),
-            self._errors.empty,
-            self.root is not None,
-        )
-        if all(conditions):
-            self.create_database()
-        return self._errors
+        if hasattr(self, "_errors"):
+            return self._errors
+        else:
+            return pd.DataFrame()
+
+    @errors.setter
+    def errors(self, value: pd.DataFrame) -> None:
+        self._errors = value
 
     def _get_unique_values(self, column: str) -> List[str]:
-        return sorted(
-            [
-                elem
-                for elem in self._database[column].unique()
-                if elem is not None
-            ]
-        )
+        """Get unique values from a database column.
+
+        Args:
+            column: Name of the column to get unique values from.
+
+        Returns:
+            List of unique values, excluding None, empty strings, and NaN
+            values.
+            Values are converted to strings and sorted.
+        """
+        if self._database.empty:
+            return []
+
+        # Get unique values and convert to list for filtering
+        values = self._database[column].unique()
+
+        # Filter out None, empty strings, and NaN values
+        value_list = [
+            str(elem)  # Convert all values to strings
+            for elem in values
+            if pd.notna(elem)  # Handles both None and np.nan
+            and str(elem).strip() != ""  # Handles empty strings and whitespace
+        ]
+
+        return sorted(value_list)
 
     @property
     def subjects(self) -> List[str]:
@@ -261,7 +296,7 @@ class BidsArchitecture(BidsArchitectureMixin):
     def extensions(self) -> List[str]:  # noqa: D102
         return self._get_unique_values("extension")
 
-    def create_database(self) -> "BidsArchitecture":
+    def create_database(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Scan filesystem and build DataFrame of matching files.
 
         Walks through the BIDS directory structure and creates two DataFrames:
@@ -314,11 +349,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             except Exception as e:
                 self._add_error_to_log(file, e, error_flags)
 
-        self._database, self._errors = self._create_dataframes(
-            data, error_flags
-        )
-
-        return self
+        return self._create_dataframes(data, error_flags)
 
     def _add_file_to_database(
         self, file: Path, entities: dict, data: Dict[str, List[Any]]
@@ -406,6 +437,15 @@ class BidsArchitecture(BidsArchitectureMixin):
         start: int | str | None = None,
         stop: int | str | None = None,
     ) -> pd.core.series.Series:
+        # Validate input types
+        valid_types = (int, str, type(None))
+        if not isinstance(start, valid_types) or not isinstance(
+            stop, valid_types
+        ):
+            raise ValueError(
+                "Start and stop must be integers, strings, or None"
+            )
+
         if isinstance(start, str):
             start = int(start)
 
@@ -418,18 +458,19 @@ class BidsArchitecture(BidsArchitectureMixin):
             start = min(dataframe_column)
 
         if stop is None or stop == "*":
-            stop = max(dataframe_column)
+            stop = max(dataframe_column) + 1
 
         return (start <= dataframe_column) & (dataframe_column < stop)
 
     def _get_single_loc(
-        self, dataframe_column: pd.core.series.Series, value: str
+        self, dataframe_column: pd.core.series.Series, value: str | None
     ) -> pd.core.series.Series:
+        if not isinstance(value, (str, type(None))):
+            value = str(value)
         locations_found = dataframe_column == value
         if not any(locations_found):
             warn("No location corresponding found in the database")
             locations_found.apply(lambda s: not (s))
-
         return locations_found
 
     def _is_numerical(
@@ -519,6 +560,9 @@ class BidsArchitecture(BidsArchitectureMixin):
             if value is None:
                 continue
 
+            if value == "":
+                return pd.Series(False, index=self._database.index)
+
             if isinstance(value, list):
                 matching_inodes = set(
                     self._database[self._database[key].isin(value)].index
@@ -572,7 +616,7 @@ class BidsArchitecture(BidsArchitectureMixin):
     def select(
         self,
         inplace: bool = False,
-        **kwargs: str | list[str] | None,
+        **kwargs: str | list[None | str] | None,
     ) -> "BidsArchitecture":
         """Select files from database based on BIDS entities.
 
@@ -617,13 +661,18 @@ class BidsArchitecture(BidsArchitectureMixin):
             ... )
 
         """
-        mask = self._create_mask(**kwargs)
+        mask = self._create_mask(**kwargs)  # type: ignore
         if inplace:
             setattr(self, "_database", self._database.loc[mask])
             return self
 
-        new_instance = copy.deepcopy(self)
-        setattr(new_instance, "_database", new_instance._database.loc[mask])
+        new_instance = copy.copy(self)
+        if any(mask):
+            new_database = self._database.loc[mask]
+        else:
+            new_database = pd.DataFrame()
+
+        setattr(new_instance, "_database", new_database)
         return new_instance
 
     def remove(

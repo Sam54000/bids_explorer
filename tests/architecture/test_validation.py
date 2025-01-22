@@ -32,10 +32,10 @@ def test_is_all_columns_valid() -> None:
             "filename",
         ]
     )
-    assert is_all_columns_valid(valid_df)
+    assert is_all_columns_valid(valid_df, strict=True)
 
     invalid_df = pd.DataFrame(columns=["subject", "invalid_column"])
-    assert not is_all_columns_valid(invalid_df)
+    assert not is_all_columns_valid(invalid_df, strict=True)
 
 
 def test_get_invalid_columns() -> None:
