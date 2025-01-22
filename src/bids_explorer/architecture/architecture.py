@@ -111,8 +111,7 @@ class BidsArchitecture(BidsArchitectureMixin):
 
     def __iter__(self) -> Iterator[pd.DataFrame]:
         """Iterate over rows in the database."""
-        for _, row in self._database.iterrows():
-            yield row
+        return self._database.iterrows()
 
     def __add__(  # noqa: D105
         self,
