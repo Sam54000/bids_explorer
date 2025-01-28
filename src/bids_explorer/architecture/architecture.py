@@ -1,5 +1,6 @@
 """Main BIDS architecture implementation."""
 import copy
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 from warnings import warn
@@ -707,3 +708,46 @@ class BidsArchitecture(BidsArchitectureMixin):
         new_instance = copy.deepcopy(self)
         setattr(new_instance, "_database", new_instance._database.loc[~mask])
         return new_instance
+
+
+@dataclass
+class ElectrodesArchitecture:
+    """Class for electrodes operations."""
+
+    root: Path
+    subject: str
+    session: str
+    space: str
+    datatype: str
+    task: str
+    run: str
+    acquisition: str
+    description: str
+
+    def __post_init__(self):
+        if self.root:
+            self._channel_database = BidsArchitecture(
+                root=self.root,
+                subject=self.subject,
+                session=self.session,
+                datatype=self.datatype,
+                task=self.task,
+                run=self.run,
+                acquisition=self.acquisition,
+                description=self.description,
+                suffix="channels",
+                extension=".tsv",
+            ).database
+
+            self._electrodes_database = BidsArchitecture(
+                root=self.root,
+                subject=self.subject,
+                session=self.session,
+                space=self.space,
+                suffix="electrodes",
+                extension=".tsv",
+            ).database
+
+        else:
+            self._channels = pd.DataFrame()
+            self._errors = pd.DataFrame()

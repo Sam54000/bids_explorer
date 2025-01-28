@@ -140,6 +140,18 @@ import bids_explorer.paths.query as query
             ),
             Path("sub-001/ses-002/eeg/"),
         ),
+        (
+            {
+                "subject": "001",
+                "session": "002",
+                "space": "CapTrak",
+                "extension": ".tsv",
+                "datatype": "eeg",
+                "suffix": "electrodes",
+            },
+            Path("sub-001_ses-002_space-CapTrak_electrodes.tsv"),
+            Path("sub-001/ses-002/eeg/"),
+        ),
     ],
 )
 def test_query_pattern_generation(
