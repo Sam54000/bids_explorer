@@ -53,6 +53,9 @@ class BidsQuery:
         return condition_on_electrode_file or all(condition_regular_files)
 
     def _format_optional_attrs(self, optional_attrs: list[str]) -> str | None:
+        if self.space is not None:
+            return f"space-{self.space}"
+
         string_key_reference = {
             "task": "task-",
             "acquisition": "acq-",
@@ -133,14 +136,17 @@ class BidsQuery:
 
     def _build_query_filename(self) -> Path:
         """Build the query."""
-        optional_attrs = [
-            # "space", # Future implementation should take account of space.
-            "task",
-            "acquisition",
-            "run",
-            "recording",
-            "description",
-        ]
+        if self.space is not None:
+            optional_attrs = ["space"]
+        else:
+            optional_attrs = [
+                "task",
+                "acquisition",
+                "run",
+                "recording",
+                "description",
+            ]
+
         formated_mandatory_str = self._format_mandatory_attrs()
         formated_optional_str = self._format_optional_attrs(optional_attrs)
         suffix_extension_str = self._format_suffix_extension(optional_attrs)

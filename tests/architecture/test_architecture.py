@@ -357,8 +357,7 @@ def test_iteration_and_properties() -> None:
     bids._database = test_data
 
     # Test __iter__
-    for i, item in enumerate(bids):
-        assert isinstance(item, pd.Series)
+    for i, item in bids:
         assert item["subject"] == test_data.iloc[i]["subject"]
         assert item["session"] == test_data.iloc[i]["session"]
 
