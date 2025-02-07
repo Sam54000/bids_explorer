@@ -724,7 +724,7 @@ class ElectrodesArchitecture:
     acquisition: str
     description: str
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: ANN204, D105
         if self.root:
             self._channel_database = BidsArchitecture(
                 root=self.root,
