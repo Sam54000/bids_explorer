@@ -1,10 +1,13 @@
+"""This module aims to deal with electrodes files and convert them into class.
+
+The electrodes files should be in csv or tsv format according to the BIDS
+standard.
+"""
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
-from bids_explorer.architecture.architecture import BidsArchitecture
-from bids_explorer.paths.query import BidsQuery
 from bids_explorer.utils.parsing import parse_bids_filename
 
 
