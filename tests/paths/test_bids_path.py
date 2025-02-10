@@ -96,3 +96,32 @@ def test_bids_path_invalid_prefix() -> None:
 
     with pytest.raises(ValueError):
         BidsPath(task="mytask-rest")
+
+
+def test_bids_path_space_handling() -> None:
+    """Test handling of space attribute in BidsPath."""
+    path = BidsPath(
+        subject="001",
+        session="01",
+        task="rest",
+        space="MNI152NLin2009cAsym",
+        suffix="bold",
+    )
+    assert path.space == "MNI152NLin2009cAsym"
+    expected = Path("sub-001_ses-01_task-rest_space-MNI152NLin2009cAsym_bold")
+    assert path.basename == expected
+
+    path = BidsPath(
+        subject="001",
+        session="01",
+        space="space-MNI152NLin2009cAsym",
+    )
+    assert path.space == "MNI152NLin2009cAsym"
+
+    filename = "sub-001_ses-01_task-rest_space-MNI152NLin2009cAsym_bold.nii.gz"
+    path_path = Path("sub-001/ses-01/func") / filename
+    bids_path = BidsPath.from_filename(path_path)
+    assert bids_path.space == "MNI152NLin2009cAsym"
+
+    with pytest.raises(ValueError):
+        BidsPath(space="wrongprefix-MNI152NLin2009cAsym")

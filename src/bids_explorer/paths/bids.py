@@ -26,12 +26,14 @@ class BidsPath(BasePath):
         run: Run number
         acquisition: Acquisition identifier
         description: Description identifier
+        space: Space identifier
     """
 
     task: Optional[str] = None
     run: Optional[str] = None
     acquisition: Optional[str] = None
     description: Optional[str] = None
+    space: Optional[str] = None
 
     def __post_init__(self) -> None:
         """Initialize and normalize BIDS entities."""
@@ -42,6 +44,7 @@ class BidsPath(BasePath):
             self.run,
             self.acquisition,
             self.description,
+            self.space,
         )
 
         for attr, value in entities.items():
@@ -87,6 +90,8 @@ class BidsPath(BasePath):
             components.append(f"run-{self.run}")
         if self.description:
             components.append(f"desc-{self.description}")
+        if self.space:
+            components.append(f"space-{self.space}")
         if self.suffix:
             components.append(self.suffix)
 
@@ -165,6 +170,8 @@ class BidsPath(BasePath):
                     entities["run"] = value
                 elif key == "desc":
                     entities["description"] = value
+                elif key == "space":
+                    entities["space"] = value
 
         entities["suffix"] = name_parts[-1]
         entities["extension"] = file.suffix

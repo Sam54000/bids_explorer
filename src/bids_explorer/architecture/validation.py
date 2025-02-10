@@ -212,6 +212,7 @@ def validate_and_normalize_entities(
     run: Optional[str],
     acquisition: Optional[str],
     description: Optional[str],
+    space: Optional[str],
 ) -> dict[str, str | None]:
     """Validate and normalize all BIDS entities."""
     prefix_mapping = {
@@ -221,6 +222,7 @@ def validate_and_normalize_entities(
         "run": "run",
         "acquisition": "acq",
         "description": "desc",
+        "space": "space",
     }
 
     special_char_pattern = re.compile(r"[^a-zA-Z0-9-]")
