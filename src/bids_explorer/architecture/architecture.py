@@ -23,8 +23,21 @@ from bids_explorer.utils.parsing import parse_bids_filename
 class BidsArchitecture(BidsArchitectureMixin):
     """Main class for handling BIDS directory structure.
 
+    The BidsArchitecture class provides a comprehensive interface for exploring
+    and querying BIDS datasets. It handles validation, selection, and filtering
+    of BIDS-compliant files.
+
     Args:
         root: Optional root path to BIDS directory.
+        subject: Optional subject ID to filter by.
+        session: Optional session ID to filter by.
+        datatype: Optional datatype to filter by.
+        task: Optional task name to filter by.
+        run: Optional run number to filter by.
+        acquisition: Optional acquisition label to filter by.
+        description: Optional description label to filter by.
+        suffix: Optional suffix to filter by.
+        extension: Optional file extension to filter by.
 
     Attributes:
         root (Optional[Path]):
@@ -43,6 +56,99 @@ class BidsArchitecture(BidsArchitectureMixin):
             List of task names present in the dataset.
         runs (List[str]):
             List of run numbers present in the dataset.
+
+    Examples:
+        Basic Usage:
+            >>> # Initialize with BIDS dataset
+            >>> bids = BidsArchitecture(
+            ...     "path/to/dataset"
+            ... )
+            >>> # Get dataset information
+            >>> print(
+            ...     f"Found {len(bids.subjects)} subjects"
+            ... )
+            >>> print(
+            ...     f"Available datatypes: {bids.datatypes}"
+            ... )
+
+        Filtering Data:
+            >>> # Select specific subject and session
+            >>> sub01 = bids.select(
+            ...     subject="01"
+            ... )
+            >>> sub01_ses1 = (
+            ...     sub01.select(
+            ...         session="1"
+            ...     )
+            ... )
+            >>> # Select multiple subjects
+            >>> multi_sub = (
+            ...     bids.select(
+            ...         subject=[
+            ...             "01",
+            ...             "02",
+            ...         ]
+            ...     )
+            ... )
+            >>> # Select range of sessions
+            >>> sessions = bids.select(
+            ...     session="1-3"
+            ... )
+            >>> # Select with wildcards
+            >>> all_after_ses1 = bids.select(
+            ...     session="1-*"
+            ... )
+
+        Advanced Queries:
+            >>> # Combine multiple criteria
+            >>> eeg_data = bids.select(
+            ...     subject="01",
+            ...     session="1",
+            ...     datatype="eeg",
+            ...     task="rest",
+            ...     run="1",
+            ... )
+            >>> # Remove specific data
+            >>> no_sub01 = (
+            ...     bids.remove(
+            ...         subject="01"
+            ...     )
+            ... )
+
+        Error Handling:
+            >>> # Check for validation errors
+            >>> bids.print_errors_log()
+            >>> # Handle specific validation cases
+            >>> if not bids.errors.empty:
+            ...     print(
+            ...         "Found validation errors:"
+            ...     )
+            ...     print(
+            ...         bids.errors[
+            ...             "error_type"
+            ...         ].unique()
+            ...     )
+
+        Working with Results:
+            >>> # Get unique values
+            >>> print(
+            ...     f"Available tasks: {bids.tasks}"
+            ... )
+            >>> print(
+            ...     f"Available runs: {bids.runs}"
+            ... )
+            >>> # Access the underlying database
+            >>> print(
+            ...     bids.database.head()
+            ... )
+
+    Notes:
+        - The class performs BIDS validation on initialization
+        - All filtering operations return new instances by default
+        - Use inplace=True in select/remove operations to modify
+                      current instance
+        - Wildcards and ranges are supported in selection criteria
+        - Error handling is built-in with comprehensive validation
     """
 
     def __init__(  # noqa: D107
@@ -675,6 +781,44 @@ class BidsArchitecture(BidsArchitectureMixin):
 
         setattr(new_instance, "_database", new_database)
         return new_instance
+
+    def strict_select(
+        self,
+        inplace: bool = False,
+        **kwargs: str | list[str | None] | None,
+    ) -> "BidsArchitecture":
+        inputs: dict[str, list[str | None]] = {}
+        nb_required = 0
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+
+            if isinstance(value, list):
+                inputs[key] = value  # type: ignore
+                nb_required += len(value)
+
+            elif isinstance(value, str):
+                inputs[key] = [value]  # type: ignore
+                nb_required += 1
+
+            else:
+                raise ValueError(
+                    "Invalid input type, expected list or str, got "
+                    f"{type(value)} instead"
+                )
+
+        if nb_required == 0:
+            return self
+
+        self.select(inplace=True, **inputs)  # type: ignore
+        self.database.drop(
+            columns=list(inputs.keys()) + ["root", "filename"],
+            inplace=True,
+        )
+
+        duplicates = self.database.duplicated()
+
+        return self
 
     def remove(
         self, inplace: bool = False, **kwargs: str | list[str] | None
