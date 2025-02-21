@@ -1,4 +1,4 @@
-![BIDS Explorer Logo](bids_explorer_logo.png)
+<a href:"./docs/images/bids_explorer_logo.png"></a>
 Tool for exploring BIDS datasets which is allows more flexibility than
 [mne-bids](https://mne.tools/mne-bids/stable/index.html) or
 [pybids](https://bids-standard.github.io/pybids/) (which are both
