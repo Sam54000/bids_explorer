@@ -1,5 +1,6 @@
-![alt text](https://github.com/Sam54000/bids_explorer/docs/images/bids_explorer_logo.png?raw=true)
-Tool for exploring BIDS datasets which is allows more flexibility than
+![alt text](https://github.com/Sam54000/bids_explorer/blob/main/docs/images/bids_explorer_logo.png)
+
+Tool for exploring BIDS datasets which allows more flexibility than
 [mne-bids](https://mne.tools/mne-bids/stable/index.html) or
 [pybids](https://bids-standard.github.io/pybids/) (which are both
 amazing tools I use very often but sometimes lack flexibility).
