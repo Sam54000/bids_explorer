@@ -1,6 +1,4 @@
-[![DOI](https://zenodo.org/badge/657341621.svg)](https://zenodo.org/doi/10.5281/zenodo.10383685)
-
-# BIDS Explorer
+![BIDS Explorer Logo](bids_explorer_logo.png)
 Tool for exploring BIDS datasets which is allows more flexibility than
 [mne-bids](https://mne.tools/mne-bids/stable/index.html) or
 [pybids](https://bids-standard.github.io/pybids/) (which are both
