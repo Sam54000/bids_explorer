@@ -10,7 +10,7 @@ packages = [{include = "bids_explorer", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 pandas = "^2.1.0"
-numpy = "^1.26.0"
+numpy = "^2.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
