@@ -1,4 +1,5 @@
 """Tests for the BidsArchitecture class and related functionality."""
+from itertools import product
 from pathlib import Path
 
 import numpy as np
@@ -16,36 +17,37 @@ def bids_dataset(tmp_path: Path) -> Path:
     sessions = ["01", "02"]
     runs = ["01", "02"]
     acquisitions = ["anAcq", "anotherAcq"]
+    recordings = ["full", "partial"]
     datatypes = ["eeg", "multimodal", "pupil"]
 
-    for sub in subjects:
-        for ses in sessions:
-            for datatype in datatypes:
-                for run in runs:
-                    for acq in acquisitions:
-                        base_path = (
-                            data_dir / f"sub-{sub}" / f"ses-{ses}" / datatype
-                        )
-                        base_path.mkdir(parents=True, exist_ok=True)
+    for sub, ses, datatype, run, acq, recording in product(
+        subjects, sessions, datatypes, runs, acquisitions, recordings
+    ):
+        base_path = data_dir / f"sub-{sub}" / f"ses-{ses}" / datatype
+        base_path.mkdir(parents=True, exist_ok=True)
 
-                        files = [
-                            (
-                                f"sub-{sub}_ses-{ses}_task-aTask_{datatype}.vhdr",
-                                "Brain Vision Data Exchange Header File\n",
-                            ),
-                            (
-                                f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_{datatype}.vhdr",
-                                "Brain Vision Data Exchange Header File\n",
-                            ),
-                            (
-                                f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_{datatype}.vhdr",
-                                "Brain Vision Data Exchange Header File\n",
-                            ),
-                        ]
+        files = [
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_run-{run}_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_run-01_recording-{recording}_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_ses-{ses}_task-aTask_acq-{acq}_run-01_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+        ]
 
-                        for filename, content in files:
-                            file_path = base_path / filename
-                            file_path.write_text(content)
+        for filename, content in files:
+            file_path = base_path / filename
+            file_path.write_text(content)
 
     return data_dir
 
@@ -114,36 +116,36 @@ def test_architecture_select(bids_dataset: Path) -> None:
     result = arch.select(subject="001")
     assert not arch.database.empty
     assert result.subjects == ["001"]
-    assert len(result) == 30
+    assert len(result) == 42
     assert all(result.database["subject"] == "001")
 
     result = arch.select(subject="001", task="aTask")
     assert result.subjects == ["001"]
     assert result.tasks == ["aTask"]
-    assert len(result) == 30
+    assert len(result) == 42
 
     result = arch.select(subject="001", task="aTask", run="01", session="01")
     assert result.subjects == ["001"]
     assert result.tasks == ["aTask"]
     assert result.runs == ["01"]
     assert result.sessions == ["01"]
-    assert len(result) == 9
+    assert len(result) == 15
 
     result = arch.select(subject=["001", "002"])
     assert result.subjects == ["001", "002"]
-    assert len(result) == 60
+    assert len(result) == 84
 
     with pytest.raises(ValueError, match="Invalid selection keys"):
         arch.select(invalid_key="value")
 
     result = arch.select(subject="001").select(task="aTask").select(run="01")
-    assert len(result) == 18
+    assert len(result) == 30
     assert result.subjects == ["001"]
     assert result.tasks == ["aTask"]
     assert result.runs == ["01"]
 
     result = arch.select(subject="001", task="aTask", datatype="eeg", run="01")
-    assert len(result) == 6
+    assert len(result) == 10
     assert result.subjects == ["001"]
     assert result.tasks == ["aTask"]
     assert result.runs == ["01"]
@@ -151,7 +153,7 @@ def test_architecture_select(bids_dataset: Path) -> None:
     result = arch.select(
         subject="001-003", task="aTask", datatype="eeg", run="01"
     )
-    assert len(result) == 18
+    assert len(result) == 30
     assert result.subjects == ["001", "002", "003"]
     assert result.tasks == ["aTask"]
     assert result.runs == ["01"]
@@ -168,7 +170,7 @@ def test_architecture_select(bids_dataset: Path) -> None:
     assert arch.tasks == ["aTask"]
     assert arch.runs == ["01"]
     assert arch.sessions == ["01"]
-    assert len(arch) == 9
+    assert len(arch) == 15
 
 
 def test_architecture_set_operations(bids_dataset: Path) -> None:
@@ -211,20 +213,21 @@ def test_architecture_representation(bids_dataset: Path) -> None:
     assert "subjects:" in repr_str
     assert "sessions:" in repr_str
     assert "datatypes:" in repr_str
+    assert "recordings:" in repr_str
     assert "tasks:" in repr_str
 
     # Test with specific values based on the bids_dataset fixture
     expected_repr = (
-        "BidsArchitecture: 150 files, "
+        "BidsArchitecture: 210 files, "
         "0 errors, "
         "subjects: 5, "
         "sessions: 2, "
         "datatypes: 3, "
+        "recordings: 2, "
         "tasks: 1"
     )
     assert repr(arch) == expected_repr
 
-    # Test that str() returns the same as repr()
     assert str(arch) == repr(arch)
 
     # Test empty architecture
@@ -235,6 +238,7 @@ def test_architecture_representation(bids_dataset: Path) -> None:
         "subjects: 0, "
         "sessions: 0, "
         "datatypes: 0, "
+        "recordings: 0, "
         "tasks: 0"
     )
     assert repr(empty_arch) == empty_repr
@@ -298,6 +302,7 @@ def test_getitem_operations() -> None:
             "acquisition": ["full", "full", "full"],
             "description": ["desc", "desc", "desc"],
             "suffix": ["eeg", "eeg", "eeg"],
+            "recording": ["full", "full", "full"],
             "extension": [".vhdr", ".vhdr", ".vhdr"],
             "atime": [1000, 2000, 3000],
             "mtime": [1000, 2000, 3000],
@@ -672,6 +677,7 @@ def test_database_initialization() -> None:
             "run": ["01"],
             "acquisition": ["full"],
             "description": ["desc"],
+            "recording": ["full"],
             "suffix": ["eeg"],
             "extension": [".vhdr"],
             "atime": [1000],
@@ -706,6 +712,7 @@ def test_select_edge_cases() -> None:
             "run": ["01", "02"],
             "acquisition": ["full", None],
             "description": ["desc", ""],
+            "recording": ["full", "partial"],
             "suffix": ["eeg", "meg"],
             "extension": [".vhdr", ".fif"],
             "atime": [1000, 2000],
@@ -747,6 +754,7 @@ def test_property_edge_cases() -> None:
     assert bids.runs == []
     assert bids.acquisitions == []
     assert bids.descriptions == []
+    assert bids.recordings == []
     assert bids.suffixes == []
     assert bids.extensions == []
 
@@ -778,6 +786,7 @@ def test_property_edge_cases() -> None:
     assert bids.runs == []
     assert bids.acquisitions == []
     assert bids.descriptions == []
+    assert bids.recordings == []
     assert bids.suffixes == []
     assert bids.extensions == []
 
@@ -845,6 +854,7 @@ def test_create_mask() -> None:
             "run": ["01", "02", "03"],
             "acquisition": ["full", None, "partial"],
             "description": ["desc1", "", "desc3"],
+            "recording": ["full", "partial", "full"],
             "suffix": ["eeg", "meg", "eeg"],
             "extension": [".vhdr", ".fif", ".vhdr"],
             "atime": [1000, 2000, 3000],

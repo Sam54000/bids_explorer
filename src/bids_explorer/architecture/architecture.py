@@ -54,6 +54,7 @@ class BidsArchitecture(BidsArchitectureMixin):
         task: Optional[str] = None,
         run: Optional[str] = None,
         acquisition: Optional[str] = None,
+        recording: Optional[str] = None,
         description: Optional[str] = None,
         suffix: Optional[str] = None,
         extension: Optional[str] = None,
@@ -68,6 +69,7 @@ class BidsArchitecture(BidsArchitectureMixin):
                 task=task,
                 run=run,
                 acquisition=acquisition,
+                recording=recording,
                 description=description,
                 suffix=suffix,
                 extension=extension,
@@ -85,6 +87,7 @@ class BidsArchitecture(BidsArchitectureMixin):
                 f"subjects: {len(self._get_unique_values('subject'))}, "
                 f"sessions: {len(self._get_unique_values('session'))}, "
                 f"datatypes: {len(self._get_unique_values('datatype'))}, "
+                f"recordings: {len(self._get_unique_values('recording'))}, "
                 f"tasks: {len(self._get_unique_values('task'))}"
             )
         else:
@@ -94,6 +97,7 @@ class BidsArchitecture(BidsArchitectureMixin):
                 "subjects: 0, "
                 "sessions: 0, "
                 "datatypes: 0, "
+                "recordings: 0, "
                 "tasks: 0"
             )
             return empty_repr
@@ -277,6 +281,15 @@ class BidsArchitecture(BidsArchitectureMixin):
         return self._get_unique_values("acquisition")
 
     @property
+    def recordings(self) -> List[str]:
+        """Returns a list of unique recordings present in the dataset.
+
+        This list contains all the recording names found in the BIDS dataset
+        or after a selection has been performed.
+        """
+        return self._get_unique_values("description")
+
+    @property
     def descriptions(self) -> List[str]:
         """Returns a list of unique descriptions present in the dataset.
 
@@ -323,6 +336,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             "task",
             "run",
             "acquisition",
+            "recording",
             "description",
             "suffix",
             "extension",
@@ -546,6 +560,7 @@ class BidsArchitecture(BidsArchitectureMixin):
             "task",
             "run",
             "acquisition",
+            "recording",
             "description",
             "suffix",
             "extension",

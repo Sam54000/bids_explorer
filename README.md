@@ -1,4 +1,4 @@
-![alt text](https://github.com/Sam54000/bids_explorer/blob/main/docs/images/bids_explorer_logo.png)
+![bids_explorer_logo](https://github.com/Sam54000/bids_explorer/blob/main/docs/images/bids_explorer_logo.png)
 
 Tool for exploring BIDS datasets which allows more flexibility than
 [mne-bids](https://mne.tools/mne-bids/stable/index.html) or

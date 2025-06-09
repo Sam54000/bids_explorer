@@ -32,8 +32,9 @@ def parse_bids_filename(
         "datatype": None,
         "task": None,
         "run": None,
-        "space": None,
+        "recording": None,
         "acquisition": None,
+        "space": None,
         "description": None,
         "suffix": None,
         "extension": None,
@@ -44,35 +45,28 @@ def parse_bids_filename(
         "session": r"ses-([^_]+)",
         "task": r"task-([^_]+)",
         "run": r"run-([^_]+)",
+        "recording": r"recording-([^_]+)",
         "acquisition": r"acq-([^_]+)",
-        "space": r"space-([^_]+)",
         "description": r"desc-([^_]+)",
+        "space": r"space-([^_]+)",
         "suffix": r"[^_]+_([^_.]+)(?:\.|$)",
     }
 
-    # Get datatype from parent directory
     parts: List[str] = list(file.parts)
     if len(parts) >= 2:
         entities["datatype"] = str(parts[-2])
 
-    # Parse filename using regex patterns
     name: str = str(file.stem)
     extension: str = str(file.suffix)
     entities["extension"] = extension
-
-    # Use provided patterns or defaults
     active_patterns = patterns if patterns is not None else default_patterns
-
-    # Split filename into components
     components = name.split("_")
 
-    # Process each component
     for component in components:
         for entity, pattern in active_patterns.items():
             if entity == "suffix":
-                continue  # Handle suffix separately
+                continue
             try:
-                # Add word boundary to pattern if not already present
                 if not pattern.endswith(
                     r"(?:[^0-9]|$)"
                 ) and not pattern.endswith(r"(?:_|$)"):
@@ -83,7 +77,6 @@ def parse_bids_filename(
             except re.error as e:
                 raise re.error(f"Invalid regex pattern for {entity}: {str(e)}")
 
-    # Handle suffix separately
     if patterns is None or "suffix" in patterns:
         suffix_pattern = (
             patterns["suffix"]

@@ -21,14 +21,14 @@ def test_parse_bids_filename_basic() -> None:
     assert result["extension"] == ".vhdr"
     assert result["datatype"] == "eeg"
 
-    # Test filename with acquisition and description
     file = Path(
-        "sub-002/ses-02/eeg/sub-002_ses-02_task-test_acq-full_desc-raw_eeg.vhdr"
+        "sub-002/ses-02/eeg/sub-002_ses-02_task-test_recording-full_acq-full_desc-raw_eeg.vhdr"
     )
     result = parse_bids_filename(file)
     assert result["subject"] == "002"
     assert result["session"] == "02"
     assert result["task"] == "test"
+    assert result["recording"] == "full"
     assert result["acquisition"] == "full"
     assert result["description"] == "raw"
     assert result["suffix"] == "eeg"

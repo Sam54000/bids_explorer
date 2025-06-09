@@ -30,10 +30,11 @@ class BidsPath(BasePath):
     """
 
     task: Optional[str] = None
-    run: Optional[str] = None
     acquisition: Optional[str] = None
-    description: Optional[str] = None
+    run: Optional[str] = None
+    recording: Optional[str] = None
     space: Optional[str] = None
+    description: Optional[str] = None
 
     def __post_init__(self) -> None:
         """Initialize and normalize BIDS entities."""
@@ -41,10 +42,11 @@ class BidsPath(BasePath):
             self.subject,
             self.session,
             self.task,
-            self.run,
             self.acquisition,
-            self.description,
+            self.run,
+            self.recording,
             self.space,
+            self.description,
         )
 
         for attr, value in entities.items():
@@ -88,10 +90,12 @@ class BidsPath(BasePath):
             components.append(f"acq-{self.acquisition}")
         if self.run:
             components.append(f"run-{self.run}")
-        if self.description:
-            components.append(f"desc-{self.description}")
+        if self.recording:
+            components.append(f"recording-{self.recording}")
         if self.space:
             components.append(f"space-{self.space}")
+        if self.description:
+            components.append(f"desc-{self.description}")
         if self.suffix:
             components.append(self.suffix)
 
@@ -168,10 +172,12 @@ class BidsPath(BasePath):
                     entities["acquisition"] = value
                 elif key == "run":
                     entities["run"] = value
-                elif key == "desc":
-                    entities["description"] = value
+                elif key == "recording":
+                    entities["recording"] = value
                 elif key == "space":
                     entities["space"] = value
+                elif key == "desc":
+                    entities["description"] = value
 
         entities["suffix"] = name_parts[-1]
         entities["extension"] = file.suffix

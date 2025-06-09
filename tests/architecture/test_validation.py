@@ -23,6 +23,7 @@ def test_all_columns_valid() -> None:
             "task",
             "run",
             "acquisition",
+            "recording",
             "description",
             "suffix",
             "extension",
@@ -41,7 +42,13 @@ def test_all_columns_valid() -> None:
 def test_get_invalid_columns() -> None:
     """Test detection of invalid columns."""
     df = pd.DataFrame(
-        columns=["subject", "session", "invalid1", "datatype", "invalid2"]
+        columns=[
+            "subject",
+            "session",
+            "invalid1",
+            "datatype",
+            "invalid2",
+        ]
     )
     invalid_cols = get_invalid_columns(df)
     assert invalid_cols == {"invalid1", "invalid2"}

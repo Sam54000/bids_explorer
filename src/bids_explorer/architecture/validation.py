@@ -15,6 +15,7 @@ VALID_COLUMNS = {
     "task",
     "run",
     "acquisition",
+    "recording",
     "description",
     "suffix",
     "extension",
@@ -75,8 +76,8 @@ def validate_bids_file(file: Path) -> bool:
         "sub",
         "ses",
         "task",
-        "acq",
         "run",
+        "acq",
         "recording",
         "desc",
         "space",
@@ -209,20 +210,22 @@ def validate_and_normalize_entities(
     subject: Optional[str],
     session: Optional[str],
     task: Optional[str],
-    run: Optional[str],
     acquisition: Optional[str],
-    description: Optional[str],
+    run: Optional[str],
+    recording: Optional[str],
     space: Optional[str],
+    description: Optional[str],
 ) -> dict[str, str | None]:
     """Validate and normalize all BIDS entities."""
     prefix_mapping = {
         "subject": "sub",
         "session": "ses",
         "task": "task",
-        "run": "run",
         "acquisition": "acq",
-        "description": "desc",
+        "run": "run",
+        "recording": "recording",
         "space": "space",
+        "description": "desc",
     }
 
     special_char_pattern = re.compile(r"[^a-zA-Z0-9-]")

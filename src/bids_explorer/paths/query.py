@@ -23,11 +23,11 @@ class BidsQuery:
     subject: Optional[str] = None
     session: Optional[str] = None
     datatype: Optional[str] = None
-    space: Optional[str] = None
     task: Optional[str] = None
     acquisition: Optional[str] = None
     run: Optional[str] = None
     recording: Optional[str] = None
+    space: Optional[str] = None
     description: Optional[str] = None
     suffix: Optional[str] = None
     extension: Optional[str] = None
