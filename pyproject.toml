@@ -6,6 +6,19 @@ authors = ["Dr. Samuel Louviot <sam.louviot@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
 packages = [{include = "bids_explorer", from = "src"}]
+homepage = "https://sam54000.github.io/bids_explorer/bids_explorer.html"
+repository = "https://github.com/Sam54000/bids_explorer"
+documentation = "https://sam54000.github.io/bids_explorer/bids_explorer.html"
+keywords = ["bids", "neuroimaging", "eeg", "dataset", "explorer", "neuroscience"]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Operating System :: OS Independent",
+  "Natural Language :: English"
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
