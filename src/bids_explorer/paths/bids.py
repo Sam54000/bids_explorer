@@ -1,5 +1,6 @@
 """BIDS-compliant path handling."""
 
+import os
 import re
 from copy import copy
 from dataclasses import dataclass
@@ -10,11 +11,9 @@ from bids_explorer.architecture.validation import (
     validate_and_normalize_entities,
     validate_bids_file,
 )
-from bids_explorer.paths.base import BasePath
 
 
-@dataclass
-class BidsPath(BasePath):
+class BidsPath:
     """BIDS-compliant path handler with query capabilities.
 
     Extends BasePath with BIDS-specific functionality and query features.
@@ -29,52 +28,67 @@ class BidsPath(BasePath):
         space: Space identifier
     """
 
-    task: Optional[str] = None
-    acquisition: Optional[str] = None
-    run: Optional[str] = None
-    recording: Optional[str] = None
-    space: Optional[str] = None
-    description: Optional[str] = None
+    entity_keys = {
+        "subject": "sub-",
+        "session": "ses-",
+        "task": "task-",
+        "acquisition": "acq-",
+        "run": "run-",
+        "recording": "recording-",
+        "space": "space-",
+        "description": "desc-",
+    }
 
-    def __post_init__(self) -> None:
-        """Initialize and normalize BIDS entities."""
-        entities = validate_and_normalize_entities(
-            self.subject,
-            self.session,
-            self.task,
-            self.acquisition,
-            self.run,
-            self.recording,
-            self.space,
-            self.description,
-        )
+    def __init__(
+        self,
+        root: Optional[Path] = None,
+        subject: Optional[str] = None,
+        session: Optional[str] = None,
+        datatype: Optional[str] = None,
+        task: Optional[str] = None,
+        acquisition: Optional[str] = None,
+        run: Optional[str] = None,
+        recording: Optional[str] = None,
+        space: Optional[str] = None,
+        description: Optional[str] = None,
+        suffix: Optional[str] = None,
+        extension: Optional[str] = None,
+    ) -> None:
+        self.root = root
+        self.subject = subject
+        self.session = session
+        self.datatype = datatype
+        self.task = task
+        self.acquisition = acquisition
+        self.run = run
+        self.recording = recording
+        self.space = space
+        self.description = description
+        self.suffix = suffix
+        self.extension = extension
 
-        for attr, value in entities.items():
-            setattr(self, attr, value)
-
-        super().__post_init__()
-
-    def _normalize_entity(
-        self, prefix: str, value: Optional[str]
-    ) -> Optional[str]:
-        """Normalize BIDS entity value by removing prefix if present.
+    def _make_path(self, absolute: bool = True) -> Path:
+        """Construct directory path.
 
         Args:
-            prefix: Expected prefix for the entity
-            value: Value to normalize
+            absolute: If True and root is set, returns absolute path.
+                     If False, returns relative path.
 
         Returns:
-            Normalized value with prefix removed if present
+            Path object representing the constructed path
         """
-        if value is None:
-            return None
+        components = []
+        if self.subject:
+            components.append(f"sub-{self.subject}")
+        if self.session:
+            components.append(f"ses-{self.session}")
+        if self.datatype:
+            components.append(self.datatype)
 
-        value = value.strip()
-        prefix_pattern = f"^{prefix}-"
-        if re.match(prefix_pattern, value):
-            return value[len(prefix) + 1 :]
-
-        return value
+        relative_path = Path(*components)
+        if absolute and self.root:
+            return self.root / relative_path
+        return relative_path
 
     def _make_basename(self) -> Path:
         """Create BIDS-compliant filename without extension.
@@ -82,20 +96,12 @@ class BidsPath(BasePath):
         Returns:
             str: BIDS-compliant filename
         """
-        components = [f"sub-{self.subject}", f"ses-{self.session}"]
+        components = []
 
-        if self.task:
-            components.append(f"task-{self.task}")
-        if self.acquisition:
-            components.append(f"acq-{self.acquisition}")
-        if self.run:
-            components.append(f"run-{self.run}")
-        if self.recording:
-            components.append(f"recording-{self.recording}")
-        if self.space:
-            components.append(f"space-{self.space}")
-        if self.description:
-            components.append(f"desc-{self.description}")
+        for entity, key in self.entity_keys.items():
+            if getattr(self, entity):
+                components.append(key + getattr(self, entity))
+
         if self.suffix:
             components.append(self.suffix)
 
@@ -148,38 +154,22 @@ class BidsPath(BasePath):
 
         validate_bids_file(file)
         entities = {}
-
         if file.suffix:
             path = file.parent
         else:
             path = copy(file)
 
         entities["datatype"] = path.parts[-1]
-        entities["session"] = path.parts[-2].split("-")[1]
-        entities["subject"] = path.parts[-3].split("-")[1]
 
-        name_parts = file.stem.split("_")
-        for part in name_parts:
-            if "-" in part:
-                key, value = part.split("-", 1)
-                if key == "sub":
-                    entities["subject"] = value
-                elif key == "ses":
-                    entities["session"] = value
-                elif key == "task":
-                    entities["task"] = value
-                elif key == "acq":
-                    entities["acquisition"] = value
-                elif key == "run":
-                    entities["run"] = value
-                elif key == "recording":
-                    entities["recording"] = value
-                elif key == "space":
-                    entities["space"] = value
-                elif key == "desc":
-                    entities["description"] = value
+        for entity, key in cls.entity_keys.items():
+            match = re.match(
+                rf"{key}([A-Za-z0-9]+)", string=os.fspath(os.fspath(file))
+            )
 
-        entities["suffix"] = name_parts[-1]
+            if match:
+                entities[entity] = match.group().split("-")[1]
+
+        entities["suffix"] = file.stem.split("_")[-1]
         entities["extension"] = file.suffix
 
         # Get the root path (everything before subject directory)

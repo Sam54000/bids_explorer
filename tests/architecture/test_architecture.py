@@ -53,6 +53,48 @@ def bids_dataset(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def bids_dataset_without_session(tmp_path: Path) -> Path:
+    """Create a temporary BIDS dataset structure."""
+    data_dir = tmp_path / "data"
+    subjects = ["001", "002", "003", "004", "005"]
+    runs = ["01", "02"]
+    acquisitions = ["anAcq", "anotherAcq"]
+    recordings = ["full", "partial"]
+    datatypes = ["eeg", "multimodal", "pupil"]
+
+    for sub, datatype, run, acq, recording in product(
+        subjects, datatypes, runs, acquisitions, recordings
+    ):
+        base_path = data_dir / f"sub-{sub}" / datatype
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        files = [
+            (
+                f"sub-{sub}_task-aTask_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_task-aTask_run-{run}_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_task-aTask_run-01_recording-{recording}_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+            (
+                f"sub-{sub}_task-aTask_acq-{acq}_run-01_{datatype}.vhdr",
+                "Brain Vision Data Exchange Header File\n",
+            ),
+        ]
+
+        for filename, content in files:
+            file_path = base_path / filename
+            file_path.write_text(content)
+
+    return data_dir
+
+
+@pytest.fixture
 def invalid_bids_dataset(tmp_path: Path) -> Path:
     """Create a temporary BIDS dataset with invalid files."""
     data_dir = tmp_path / "data"
@@ -100,6 +142,13 @@ def test_architecture_database_creation(bids_dataset: Path) -> None:
     assert arch.acquisitions == ["anAcq", "anotherAcq"]
     assert arch.suffixes == ["eeg", "multimodal", "pupil"]
     assert arch.extensions == [".vhdr"]
+
+
+def test_architecture_database_creation_wo_session(
+    bids_dataset_without_session: Path,
+) -> None:
+    arch = BidsArchitecture(root=bids_dataset_without_session)
+    assert arch.sessions is None
 
 
 def test_architecture_select(bids_dataset: Path) -> None:

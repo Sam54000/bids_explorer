@@ -3,7 +3,7 @@
 import os
 import re  # Add this at the top of the file
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Iterator, Optional
 
 
@@ -38,7 +38,6 @@ class BidsQuery:
     def _format_mandatory_attrs(self) -> str:
         str_attrs = [
             f"sub-{self.subject or '*'}",
-            f"ses-{self.session or '*'}",
         ]
 
         return "_".join(str_attrs)
@@ -47,7 +46,7 @@ class BidsQuery:
         condition_regular_files = [
             getattr(self, attr) is not None
             for attr in optional_attrs
-            if attr != "space"
+            if (attr != "space" or attr != "session")
         ]
         condition_on_electrode_file = self.space is not None
         return condition_on_electrode_file or all(condition_regular_files)
@@ -57,6 +56,7 @@ class BidsQuery:
             return f"space-{self.space}"
 
         string_key_reference = {
+            "session": "ses-",
             "task": "task-",
             "acquisition": "acq-",
             "run": "run-",
@@ -66,7 +66,8 @@ class BidsQuery:
         str_attrs = "_".join(
             [
                 f"{string_key_reference.get(attr)}{getattr(self,attr)}"
-                if getattr(self, attr) is not None and attr != "space"
+                if getattr(self, attr) is not None
+                and (attr != "space" or attr != "session")
                 else "*"
                 for attr in optional_attrs
             ]
@@ -177,10 +178,11 @@ class BidsQuery:
 
     def _build_query_pathname(self) -> Path:
         path = (
-            f"sub-{self.subject or '*'}/"
-            f"ses-{self.session or '*'}/{self.datatype or '*'}"
+            f"sub-{self.subject or '*'}",
+            f"ses-{self.session}" if self.session is not None else "**",
+            f"{self.datatype or '*'}",
         )
-        return Path(path)
+        return Path(*path)
 
     @property
     def filename(self) -> Path:
@@ -211,4 +213,4 @@ class BidsQuery:
                 "Root was not defined. Please instantiate the object"
                 " by setting root to a desired path"
             )
-        return self.root.rglob(os.fspath(self.relative_path / self.filename))
+        return self.root.glob(os.fspath(self.relative_path / self.filename))
