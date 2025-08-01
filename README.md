@@ -45,8 +45,11 @@ root
 
 # Installation
 
-For the moment this module is not published on pypi so the installation will
-require you to follow these steps:
+```bash
+pip install bids_explorer
+```
+
+If you want to contribute (and you are more than welcome!):
 
 1. Make sure poetry is installed on your machine (or the remote machine you
 are working on). Poetry is a dependancies and environment manager which
