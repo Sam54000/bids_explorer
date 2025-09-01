@@ -30,7 +30,7 @@ pytest = "^8.3.4"
 mypy = "^1.15.0"
 pre-commit = "^4.1.0"
 pytest-cov = "^6.0.0"
-ruff = "^0.9.9"
+ruff = ">=0.9.9,<0.13.0"
 
 [tool.poetry.group.docs.dependencies]
 pdoc = "^15.0.1"
